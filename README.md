@@ -12,7 +12,7 @@
 
 Lany is a 4K and 7K key rhythm game in the style of osu!mania. You pick a song, notes fall down the lanes, and you hit them in time with the music. It reads regular `.osz` beatmap files, so a lot of existing community maps work out of the box.
 
-This repository is the frontend. The API, database and scoring live in a separate backend repo ([lanify-be](https://github.com/Artdi222/lanify-be)).
+This repository is the frontend. The API, database and scoring live in a separate backend repo ([lany-be](https://github.com/Artdi222/lany-be)).
 
 The layout borrows a lot from osu!lazer because it simply plays well, but the look is our own. The colours come straight from our mascot art: dark slate, soft lavender and not much else.
 
