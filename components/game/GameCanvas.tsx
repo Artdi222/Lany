@@ -232,6 +232,7 @@ export default function GameCanvas({ beatmapId, onReady, onProgress }: GameCanva
           volume: settings.volume,
           globalOffset: settings.globalOffset,
           mods: useGameStore.getState().selectedMods,
+          customRate: useGameStore.getState().customRate,
           callbacks: { onJudgement: handleJudgement, onComplete: handleComplete, onFail: handleFail },
         });
 

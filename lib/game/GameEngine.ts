@@ -42,10 +42,12 @@ export class GameEngine {
     volume: number;
     globalOffset: number;
     mods?: readonly ModAcronym[];
+    /** Customise rate for the speed mod (null = its default). */
+    customRate?: number | null;
     callbacks: GameEngineCallbacks;
   }) {
     const mods = config.mods ?? [];
-    const rate = modRate(mods);
+    const rate = modRate(mods, config.customRate ?? null);
     this.app = config.app;
     this.notes = config.notes;
     this.callbacks = config.callbacks;

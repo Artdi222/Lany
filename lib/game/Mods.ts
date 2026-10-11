@@ -38,12 +38,24 @@ export function toggleMod(selected: readonly ModAcronym[], mod: ModAcronym): Mod
   return MODS.map((m) => m.acronym).filter((a) => next.has(a));
 }
 
-/** Playback / game-clock rate. */
-export function modRate(mods: readonly ModAcronym[]): number {
-  if (mods.includes("HT")) return 0.75;
-  if (mods.includes("DT") || mods.includes("NC")) return 1.5;
-  return 1;
+/** Customise (lazer): the speed mod's rate can be set on a slider; any non-default rate makes the play unranked. */
+export function speedRange(mods: readonly ModAcronym[]): { mod: ModAcronym; min: number; max: number; def: number } | null {
+  if (mods.includes("HT")) return { mod: "HT", min: 0.5, max: 0.99, def: 0.75 };
+  const fast = mods.find((m) => m === "DT" || m === "NC");
+  return fast ? { mod: fast, min: 1.01, max: 2, def: 1.5 } : null;
 }
+
+/** Playback / game-clock rate; `customRate` (Customise) replaces the speed mod's default. */
+export function modRate(mods: readonly ModAcronym[], customRate: number | null = null): number {
+  const range = speedRange(mods);
+  if (!range) return 1;
+  return customRate == null ? range.def : Math.min(range.max, Math.max(range.min, customRate));
+}
+
+export const isUnranked = (mods: readonly ModAcronym[], customRate: number | null) => {
+  const range = speedRange(mods);
+  return !!range && customRate != null && modRate(mods, customRate) !== range.def;
+};
 
 /** Hit window scale; EZ widens windows like osu-mania-stable (great 40 -> 56 ms). */
 export const windowScale = (mods: readonly ModAcronym[]) => (mods.includes("EZ") ? 1.4 : 1);

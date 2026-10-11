@@ -245,6 +245,30 @@
 }
 
 /* Breathing animation for logo */
+/* Mod Select: columns enter after the footer tiles slide away (200 ms), alternating from above / below. */
+@theme {
+  --animate-mods-in-top: mods-in-top 420ms var(--ease-lf-out) 200ms both;
+  --animate-mods-in-bottom: mods-in-bottom 420ms var(--ease-lf-out) 200ms both;
+  --animate-mods-fade: mods-fade 250ms ease-out 200ms both;
+  --animate-mods-deselect-in: mods-deselect-in 300ms var(--ease-lf-out) 200ms both;
+}
+@keyframes mods-fade {
+  from { opacity: 0; }
+}
+/* The skew is part of every frame, so the columns travel already slanted (it is not swapped in at the end). */
+@keyframes mods-in-top {
+  from { transform: translateY(-110vh) skewX(-11deg); }
+  to { transform: translateY(0) skewX(-11deg); }
+}
+@keyframes mods-in-bottom {
+  from { transform: translateY(110vh) skewX(-11deg); }
+  to { transform: translateY(0) skewX(-11deg); }
+}
+@keyframes mods-deselect-in {
+  from { transform: translateY(-90px) skewX(-10deg); opacity: 0; }
+  to { transform: translateY(0) skewX(-10deg); opacity: 1; }
+}
+
 @keyframes breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.03); }

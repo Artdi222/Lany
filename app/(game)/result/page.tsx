@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ChevronLeft, RotateCcw, Star, User } from "lucide-react";
 import { useGameStore, calculateRank } from "@/lib/store/useGameStore";
+import { isUnranked } from "@/lib/game/Mods";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { getBeatmapPerformance, getScoreDetail, peekBeatmapPerformance, submitScore, type BeatmapPerformance } from "@/lib/api/scores";
 import { getLeaderboard } from "@/lib/api/leaderboard";
@@ -88,6 +89,7 @@ export default function ResultPage() {
   const rank = calculateRank(accuracy);
   const zoom = useCardZoom();
   const selectedMods = useGameStore((s) => s.selectedMods);
+  const unranked = useGameStore((s) => isUnranked(s.selectedMods, s.customRate));
   const mods = isReadOnly ? modAcronyms(viewingMeta?.mods) : selectedMods.join("");
   const totalJudgements = Object.values(judgements).reduce((a, b) => a + b, 0);
   const beatmapId = currentBeatmap?.id ?? selectedBeatmapId;
@@ -102,6 +104,11 @@ export default function ResultPage() {
     }
 
     submitted.current = true;
+    // ponytail: unranked (Customise speed) plays are not saved at all; the backend has no unranked flag.
+    if (unranked) {
+      toast.info("Unranked play: score not saved");
+      return;
+    }
 
     if (token && selectedBeatmapId) {
       const payload = {
@@ -123,7 +130,7 @@ export default function ResultPage() {
         })
         .catch(() => toast.error("Failed to save score"));
     }
-  }, [token, selectedBeatmapId, score, accuracy, maxCombo, judgements, accuracyHistory, hitErrors, isReadOnly, totalJudgements, selectedMods]);
+  }, [token, selectedBeatmapId, score, accuracy, maxCombo, judgements, accuracyHistory, hitErrors, isReadOnly, totalJudgements, selectedMods, unranked]);
 
   // Leaderboard strip; refetched once the fresh score is saved so it lands in its real position.
   useEffect(() => {

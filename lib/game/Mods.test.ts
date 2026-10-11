@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { modRate, scoreMultiplier, toggleMod, windowScale, hpLossScale } from "./Mods";
+import { isUnranked, modRate, scoreMultiplier, toggleMod, windowScale, hpLossScale } from "./Mods";
 
 describe("toggleMod", () => {
   test("adds and removes", () => {
@@ -26,4 +26,14 @@ test("rate / windows / hp / multiplier", () => {
   expect(hpLossScale(["HD"])).toBe(1);
   expect(scoreMultiplier(["EZ", "NF"])).toBe(0.25);
   expect(scoreMultiplier(["DT", "HD"])).toBe(1);
+});
+
+test("customise: custom rate, clamped to the speed mod's range, makes the play unranked", () => {
+  expect(modRate(["DT"], 1.63)).toBe(1.63);
+  expect(modRate(["HT"], 1.5)).toBe(0.99);
+  expect(modRate(["HD"], 1.63)).toBe(1);
+  expect(isUnranked(["DT"], 1.63)).toBe(true);
+  expect(isUnranked(["DT"], 1.5)).toBe(false);
+  expect(isUnranked(["HD"], 1.63)).toBe(false);
+  expect(isUnranked(["NC"], null)).toBe(false);
 });

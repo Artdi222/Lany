@@ -30,7 +30,7 @@ export default function GameSlider({
           {label}
         </span>
         <span className="text-xs font-game-mono text-lf-accent tabular-nums font-bold bg-lf-surface/50 px-2 py-1 rounded-md border border-lf-accent/20 shadow-[inset_0_0_10px_rgba(185,189,230,0.05)]">
-          {step < 1 ? value.toFixed(1) : value}{suffix}
+          {step < 0.1 ? value.toFixed(2) : step < 1 ? value.toFixed(1) : value}{suffix}
         </span>
       </div>
       <div className="relative w-full h-5 flex items-center">

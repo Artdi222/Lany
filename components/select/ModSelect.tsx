@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, X } from "lucide-react";
+import { ChevronDown, RotateCcw, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MODS, modRate, scoreMultiplier, toggleMod, type ModCategory } from "@/lib/game/Mods";
+import { MODS, isUnranked, modRate, scoreMultiplier, speedRange, toggleMod, type ModCategory } from "@/lib/game/Mods";
+import GameSlider from "@/components/game/shared/GameSlider";
 import { useGameStore } from "@/lib/store/useGameStore";
 import { getBeatmapPerformance, peekBeatmapPerformance } from "@/lib/api/scores";
 import type { Beatmap } from "@/types/beatmap";
@@ -27,6 +28,11 @@ export default function ModSelect({ onClose }: { onClose: () => void }) {
   const q = query.trim().toLowerCase();
   const visible = MODS.filter((m) => !q || m.name.toLowerCase().includes(q) || m.acronym.toLowerCase().includes(q));
   const multiplier = scoreMultiplier(selected);
+  const customRate = useGameStore((s) => s.customRate);
+  const setCustomRate = useGameStore((s) => s.setCustomRate);
+  const range = speedRange(selected);
+  const unranked = isUnranked(selected, customRate);
+  const [customiseOpen, setCustomiseOpen] = useState(false);
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => {
@@ -65,9 +71,63 @@ export default function ModSelect({ onClose }: { onClose: () => void }) {
         </span>
       </label>
 
+      {/* Customise (foto `...717206529`): settings of the selected speed mod. */}
+      <div className="absolute right-[135px] top-[131px] z-10 w-[530px] overflow-hidden rounded-xl shadow-lg">
+        <button
+          type="button"
+          disabled={!range}
+          aria-expanded={customiseOpen && !!range}
+          onClick={() => setCustomiseOpen((v) => !v)}
+          className={cn(
+            "flex h-[54px] w-full items-center justify-between px-6 font-game-display text-[22px] text-white transition-colors",
+            range ? "cursor-pointer bg-lf-primary hover:brightness-110" : "cursor-not-allowed bg-select-field text-white/50",
+          )}
+        >
+          Customise
+          <ChevronDown className={cn("h-7 w-7 transition-transform", customiseOpen && range && "rotate-180")} strokeWidth={3} aria-hidden />
+        </button>
+        {customiseOpen && range && (
+          <div className="bg-select-panel px-9 pb-6 pt-5 text-white">
+            <div className="flex items-center justify-between">
+              <span className="font-game-display text-xl">{MODS.find((m) => m.acronym === range.mod)!.name}</span>
+              <span className="rounded-full bg-lf-danger px-3 text-[13px] font-bold text-select-bar">{range.mod}</span>
+            </div>
+            <div className="mt-3 flex items-start gap-2">
+              <button
+                type="button"
+                aria-label="Reset speed"
+                title="Reset to default"
+                onClick={() => setCustomRate(null)}
+                className={cn("mt-0.5 cursor-pointer text-lf-accent", customRate == null && "invisible")}
+              >
+                <RotateCcw className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+              </button>
+              <GameSlider
+                className="flex-1"
+                label={range.def > 1 ? "Speed increase" : "Speed decrease"}
+                value={modRate(selected, customRate)}
+                min={range.min}
+                max={range.max}
+                step={0.01}
+                suffix="x"
+                onChange={(v) => setCustomRate(v)}
+              />
+            </div>
+            {/* ponytail: no "Adjust pitch" toggle; Web Audio rate always shifts pitch, a pitch-preserving rate needs a time-stretch worklet. */}
+          </div>
+        )}
+      </div>
+
       <div className="mt-[114px] flex gap-[15px] overflow-x-auto pl-[520px]">
-        {COLUMNS.filter((col) => visible.some((m) => m.category === col.category)).map((col) => (
-          <section key={col.category} className="h-[680px] w-[430px] shrink-0 -skew-x-[11deg] overflow-hidden rounded-xl bg-select-band shadow-lg">
+        {COLUMNS.filter((col) => visible.some((m) => m.category === col.category)).map((col, i) => (
+          // First column drops in from above, the next rises from below (after the footer tiles slide away).
+          <section
+            key={col.category}
+            className={cn(
+              "h-[680px] w-[430px] shrink-0 -skew-x-[11deg] overflow-hidden rounded-xl bg-select-band shadow-lg",
+              i % 2 ? "motion-safe:animate-mods-in-bottom" : "motion-safe:animate-mods-in-top",
+            )}
+          >
             <h3 className="flex h-14 items-center px-[25px] font-game-display text-[17px] font-semibold text-select-bar" style={{ backgroundColor: col.color }}>
               <span className="skew-x-[11deg]">{col.title}</span>
             </h3>
@@ -111,19 +171,26 @@ export default function ModSelect({ onClose }: { onClose: () => void }) {
       {selected.length > 0 && (
         <div className="absolute bottom-[95px] left-[420px] flex h-9 -skew-x-[11deg] items-center gap-3 rounded-lg bg-select-bar px-3 shadow-lg">
           <span className="flex skew-x-[11deg] gap-1">
-            {selected.map((a) => (
-              <span
-                key={a}
-                className="flex h-[22px] w-[30px] items-center justify-center font-game-display text-[10px] font-bold text-select-bar"
-                style={{ clipPath: HEX, backgroundColor: colorOf(MODS.find((m) => m.acronym === a)!.category) }}
-              >
-                {a}
-              </span>
-            ))}
+            {selected.map((a) => {
+              const custom = range?.mod === a && unranked;
+              return (
+                <span
+                  key={a}
+                  className={cn("flex h-[22px] items-center justify-center font-game-display text-[10px] font-bold text-select-bar", custom ? "w-[64px] gap-1" : "w-[30px]")}
+                  style={{ clipPath: HEX, backgroundColor: colorOf(MODS.find((m) => m.acronym === a)!.category) }}
+                >
+                  {a}
+                  {custom && <span>{modRate(selected, customRate).toFixed(2)}x</span>}
+                </span>
+              );
+            })}
           </span>
           <span className="skew-x-[11deg] font-game-display text-[15px] font-bold text-white" style={{ color: multiplierColor(multiplier) }}>
             {multiplier.toFixed(2)}x
           </span>
+          {unranked && (
+            <span className="skew-x-[11deg] rounded-md bg-lf-warning px-3 py-0.5 font-game-display text-[13px] font-bold text-select-bar">UNRANKED</span>
+          )}
         </div>
       )}
     </div>
@@ -133,7 +200,9 @@ export default function ModSelect({ onClose }: { onClose: () => void }) {
 /** Footer kanan saat Mod Select terbuka: bintang, BPM, KC/OD/HP, multiplier (nilai ikut mod kecepatan). */
 export function ModStats({ beatmap }: { beatmap: Beatmap | null }) {
   const selected = useGameStore((s) => s.selectedMods);
-  const rate = modRate(selected);
+  const customRate = useGameStore((s) => s.customRate);
+  const rate = modRate(selected, customRate);
+  const unranked = isUnranked(selected, customRate);
   const speed = rate > 1 ? "DT" : rate < 1 ? "HT" : "";
   const [, bump] = useState(0);
 
@@ -143,7 +212,8 @@ export function ModStats({ beatmap }: { beatmap: Beatmap | null }) {
   }, [beatmap, speed]);
 
   if (!beatmap) return null;
-  const stars = speed ? peekBeatmapPerformance(beatmap.id, speed)?.starRating : beatmap.starRating;
+  // ponytail: the backend caches stars for 1.5x/0.75x only, so a custom rate shows no star value.
+  const stars = unranked ? undefined : speed ? peekBeatmapPerformance(beatmap.id, speed)?.starRating : beatmap.starRating;
   const stat = (label: string, value: string | number) => (
     <span className="flex flex-col items-center leading-tight">
       <span className="font-game-display text-[19px] font-bold">{label}</span>
@@ -155,11 +225,11 @@ export function ModStats({ beatmap }: { beatmap: Beatmap | null }) {
   const box = "flex h-16 -skew-x-[10deg] overflow-hidden rounded-lg border border-white/10 shadow-lg";
   const seg = "flex h-full items-center skew-x-[10deg]";
   return (
-    <div className="absolute bottom-[18px] right-[20px] z-20 flex gap-10 font-game-display text-white">
+    <div className="absolute bottom-[18px] right-[20px] z-20 flex gap-10 font-game-display text-white motion-safe:animate-mods-fade">
       <div className={box}>
         <div className="flex items-center gap-10 bg-select-tile px-7">
           <span className={cn(seg, "gap-10")}>
-            <span className="rounded-full bg-lf-danger px-3 py-0.5 text-[15px] font-bold text-select-bar">★ {stars != null ? stars.toFixed(2) : "…"}</span>
+            <span className="rounded-full bg-lf-danger px-3 py-0.5 text-[15px] font-bold text-select-bar">★ {stars != null ? stars.toFixed(2) : unranked ? "—" : "…"}</span>
             <span className="text-[21px]">{Math.round(beatmap.bpm * rate)} BPM</span>
           </span>
         </div>
@@ -172,8 +242,8 @@ export function ModStats({ beatmap }: { beatmap: Beatmap | null }) {
         </div>
       </div>
       <div className={box}>
-        <div className="flex w-[130px] items-center justify-center bg-select-tile">
-          <span className={cn(seg, "text-[18px] capitalize")}>{beatmap.rankedStatus}</span>
+        <div className={cn("flex w-[130px] items-center justify-center", unranked ? "bg-lf-warning text-select-bar" : "bg-select-tile")}>
+          <span className={cn(seg, "text-[18px] capitalize")}>{unranked ? "Unranked" : beatmap.rankedStatus}</span>
         </div>
         <div className="flex w-[85px] items-center justify-center bg-select-field">
           <span className={cn(seg, "text-[18px]")} style={{ color: multiplierColor(scoreMultiplier(selected)) }}>{scoreMultiplier(selected).toFixed(2)}x</span>

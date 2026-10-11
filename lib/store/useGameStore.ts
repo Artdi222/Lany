@@ -11,7 +11,7 @@ import type {
 } from '@/types/game';
 import type { Beatmap } from '@/types/beatmap';
 import { applyJudgement, maxScoreUnits as computeMaxScoreUnits } from '@/lib/game/JudgementState';
-import { hpLossScale, scoreMultiplier, type ModAcronym } from '@/lib/game/Mods';
+import { hpLossScale, scoreMultiplier, speedRange, type ModAcronym } from '@/lib/game/Mods';
 
 interface GameState {
   status: GameStatus;
@@ -36,12 +36,15 @@ interface GameState {
   maxScoreUnits: number;
   /** Mods picked in song select; used by the next play, its score submit and result screen. */
   selectedMods: ModAcronym[];
+  /** Customise: speed-mod rate set on the slider; null = the mod's default. Non-default = unranked. */
+  customRate: number | null;
 
   leaderboardCache: Record<string, { entries: LeaderboardEntry[]; timestamp: number }>;
 
   // Actions
   setBeatmaps: (beatmaps: Beatmap[]) => void;
   setSelectedMods: (mods: ModAcronym[]) => void;
+  setCustomRate: (rate: number | null) => void;
   setSelectedBeatmap: (beatmap: Beatmap | null) => void;
   startGame: (beatmap: ParsedBeatmap) => void;
   pauseGame: () => void;
@@ -98,9 +101,13 @@ export const useGameStore = create<GameState>()((set, get) => ({
   retryTrigger: 0,
   maxScoreUnits: 0,
   selectedMods: [],
+  customRate: null,
 
   setBeatmaps: (beatmaps) => set({ beatmaps }),
-  setSelectedMods: (selectedMods) => set({ selectedMods }),
+  // A different (or no) speed mod drops the custom rate, like lazer resetting the mod's settings.
+  setSelectedMods: (selectedMods) =>
+    set((s) => (speedRange(s.selectedMods)?.mod === speedRange(selectedMods)?.mod ? { selectedMods } : { selectedMods, customRate: null })),
+  setCustomRate: (customRate) => set({ customRate }),
   setSelectedBeatmap: (selectedBeatmap) => set({ selectedBeatmap, selectedBeatmapId: selectedBeatmap?.id || null }),
 
   startGame: (beatmap) =>
