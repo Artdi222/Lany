@@ -63,6 +63,7 @@ export default function SongSelectPage() {
 
   const [search, setSearch] = useState("");
   const token = useAuthStore((s) => s.token);
+  const keyMode = useSettingsStore((s) => s.keyMode);
   const activeCollection = useCollectionStore((s) => s.collections.find((c) => c.id === s.activeId) ?? null);
   useEffect(() => {
     useCollectionStore.getState().load().catch(() => {});
@@ -179,17 +180,11 @@ export default function SongSelectPage() {
     changeSelection(beatmap);
   };
 
-  const handleRandomBeatmap = () => {
-    if (beatmaps.length === 0) return;
-    const random = beatmaps[Math.floor(Math.random() * beatmaps.length)];
-    changeSelection(random);
-  };
-
   // --- Keyboard Navigation Logic ---
   const groupedCategories = useMemo<GroupCategory[]>(() => {
     const lowerSearch = search.toLowerCase();
-    // Collection filter works per difficulty, like lazer collections.
-    const pool = activeCollection ? beatmaps.filter((b) => activeCollection.beatmapIds.includes(b.id)) : beatmaps;
+    // Top-bar 4K/7K mode, then the collection filter (per difficulty, like lazer collections).
+    const pool = beatmaps.filter((b) => b.keyCount === keyMode && (!activeCollection || activeCollection.beatmapIds.includes(b.id)));
     
     // First, filter all beatmaps
     const validBeatmaps = pool.filter(b => {
@@ -320,7 +315,7 @@ export default function SongSelectPage() {
         return [{ label: "", items }];
       }
     }
-  }, [beatmaps, activeCollection, search, starMin, starMax, groupBy, sortBy]);
+  }, [beatmaps, keyMode, activeCollection, search, starMin, starMax, groupBy, sortBy]);
 
   const flatBeatmaps = useMemo(() => {
     const list: Beatmap[] = [];
@@ -335,6 +330,22 @@ export default function SongSelectPage() {
     });
     return list;
   }, [groupedCategories, groupBy]);
+
+  const handleRandomBeatmap = () => {
+    // From the listed maps (4K/7K mode, search, star range, collection), not the whole library.
+    if (flatBeatmaps.length === 0) return;
+    const random = flatBeatmaps[Math.floor(Math.random() * flatBeatmaps.length)];
+    changeSelection(random);
+  };
+
+  // The selection only shows (detail, Play, Options) when it belongs to the current 4K/7K mode.
+  const shownBeatmap = selectedBeatmap?.keyCount === keyMode ? selectedBeatmap : null;
+
+  // 4K/7K mode (top bar, or a remembered map from the other mode): keep the selection inside the listed mode.
+  // Only a key-count mismatch triggers this, so typing in search never changes the selection.
+  useEffect(() => {
+    if (flatBeatmaps.length && selectedBeatmap && selectedBeatmap.keyCount !== keyMode) changeSelection(flatBeatmaps[0]);
+  }, [keyMode, flatBeatmaps, selectedBeatmap, changeSelection]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -387,20 +398,20 @@ export default function SongSelectPage() {
 
   return (
     <div className="relative flex-1 w-full flex flex-col overflow-hidden bg-select-bar">
-      <SelectBackground coverUrl={selectedBeatmap?.coverUrl ?? null} />
+      <SelectBackground coverUrl={shownBeatmap?.coverUrl ?? null} />
 
       <div className={`absolute inset-x-0 top-0 bottom-[67px] z-10 transition-opacity duration-300 ${mounted ? "opacity-100" : "opacity-0"}`}>
         {mounted && (
           <>
             {/* Kiri: info beatmap + leaderboard */}
             <div className="absolute inset-y-0 left-0 flex w-[min(890px,48vw)] min-w-[520px] flex-col">
-              <BeatmapDetail beatmap={selectedBeatmap} />
+              <BeatmapDetail beatmap={shownBeatmap} />
             </div>
 
             {/* Kanan: pencarian + daftar, kartu bleed sampai tepi kanan */}
             <div className="absolute inset-y-0 right-0 flex w-[min(880px,46vw)] min-w-[520px] flex-col">
               <BeatmapList
-                selectedBeatmap={selectedBeatmap}
+                selectedBeatmap={shownBeatmap}
                 onSelectBeatmap={handleSelectBeatmap}
                 loading={loading}
                 search={search}
@@ -421,9 +432,9 @@ export default function SongSelectPage() {
 
       {optionsOpen && (
         <OptionsMenu
-          beatmap={selectedBeatmap}
+          beatmap={shownBeatmap}
           onClose={() => setOptionsOpen(false)}
-          onPlay={() => selectedBeatmap && router.push(`/prepare/${selectedBeatmap.id}`)}
+          onPlay={() => shownBeatmap && router.push(`/prepare/${shownBeatmap.id}`)}
         />
       )}
 
@@ -435,10 +446,10 @@ export default function SongSelectPage() {
         onMods={() => { setOptionsOpen(false); setModsOpen((v) => !v); }}
         modsOpen={modsOpen}
         modCount={modCount}
-        modStats={<ModStats beatmap={selectedBeatmap} />}
-        onPlay={() => selectedBeatmap && router.push(`/prepare/${selectedBeatmap.id}`)}
+        modStats={<ModStats beatmap={shownBeatmap} />}
+        onPlay={() => shownBeatmap && router.push(`/prepare/${shownBeatmap.id}`)}
         optionsOpen={optionsOpen}
-        canPlay={!!selectedBeatmap}
+        canPlay={!!shownBeatmap}
       />
     </div>
   );

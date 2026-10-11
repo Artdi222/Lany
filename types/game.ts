@@ -155,6 +155,8 @@ export interface GameSettings {
   selectionStarMin: number;
   selectionStarMax: number;
   lastSelectedBeatmapId: string | null;
+  /** Top-bar mode switch: song select only lists maps with this key count. */
+  keyMode: 4 | 7;
   percyMaxLengthPx: number;
 }
 
@@ -180,6 +182,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   selectionStarMin: 0,
   selectionStarMax: 10,
   lastSelectedBeatmapId: null,
+  keyMode: 4,
   percyMaxLengthPx: 99999, // ponytail: Infinity breaks JSON.stringify (zustand persist), 99999 is larger than any screen
 };
 

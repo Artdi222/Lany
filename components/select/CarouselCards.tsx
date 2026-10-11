@@ -5,7 +5,6 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Beatmap } from "@/types/beatmap";
 import { difficultyColor, starTextColor } from "@/lib/select/difficultyColor";
 import { cn } from "@/lib/utils";
-import { Icon } from "@/components/ui/icons/Icon";
 
 /** Kartu daftar beatmap (spec: docs/ui-spec/song-select.md, "Kanan: daftar beatmap"). */
 
@@ -18,9 +17,13 @@ const STATUS: Record<string, { label: string; bg: string; fg: string }> = {
   pending: { label: "PENDING", bg: "#dddded", fg: "#1b1c26" },
 };
 
-/** Ikon ruleset mania di samping pill status dan di tile difficulty (lazer menampilkan ikon ruleset di sini). */
-function Ring({ size = 18, color = "#fff" }: { size?: number; color?: string }) {
-  return <Icon name="ruleset-mania" size={size} strokeWidth={2.4} className="shrink-0" style={{ color }} />;
+/** Mode badge (4K / 7K) where lazer shows the ruleset icon: next to the status pill and on the difficulty tile. */
+function KeyBadge({ keys, size = 13, color = "#fff" }: { keys: number; size?: number; color?: string }) {
+  return (
+    <span className="shrink-0 font-game-display font-bold leading-none" style={{ color, fontSize: size }}>
+      {keys}K
+    </span>
+  );
 }
 
 /** 10 slot: ★ penuh sebanyak floor(SR), satu ★ redup bila pecahan >= .25, sisanya titik. */
@@ -101,7 +104,7 @@ export function SetCard({
           <span className="inline-flex h-[18px] items-center rounded-full px-2 font-game-display text-[11px] font-bold" style={{ backgroundColor: st.bg, color: st.fg }}>
             {st.label}
           </span>
-          <Ring />
+          <KeyBadge keys={difficulties[0]?.keyCount ?? 4} />
           <span className="flex items-center gap-[2.5px]">
             {difficulties.map((d) => (
               <span key={d.id} className="h-[14px] w-[7px] rounded-full" style={{ backgroundColor: difficultyColor(d.starRating) }} />
@@ -133,8 +136,8 @@ export function DiffCard({ diff, selected, grade, onClick }: { diff: Beatmap; se
           : `linear-gradient(to right, color-mix(in srgb, ${color} 25%, #343747), color-mix(in srgb, ${color} 14.5%, #2f3142) 55%, color-mix(in srgb, ${color} 8%, #2a2c3a))`,
       }}
     >
-      <span className={cn("flex shrink-0 flex-col items-center justify-center gap-1", grade ? "w-9" : "w-4")} style={{ backgroundColor: color }}>
-        <Ring size={12} color="rgb(0 0 0 / 0.85)" />
+      <span className={cn("flex shrink-0 flex-col items-center justify-center gap-1", grade ? "w-9" : "w-6")} style={{ backgroundColor: color }}>
+        <KeyBadge keys={diff.keyCount} size={10} color="rgb(0 0 0 / 0.85)" />
         {grade && (
           <span className="rounded-full px-1.5 font-game-display text-[11px] font-bold leading-[15px] text-black/80" style={{ backgroundColor: GRADE_COLORS[grade] }}>
             {grade}

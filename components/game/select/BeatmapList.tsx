@@ -1,5 +1,6 @@
 "use client";
 
+import { useSettingsStore } from "@/lib/store/useSettingsStore";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { apiClient } from "@/lib/api/client";
 import type { RankGrade } from "@/types/game";
@@ -88,6 +89,7 @@ export default function BeatmapList({
   const collections = useCollectionStore((s) => s.collections);
   const activeCollectionId = useCollectionStore((s) => s.activeId);
   const setActiveCollection = useCollectionStore((s) => s.setActive);
+  const keyMode = useSettingsStore((s) => s.keyMode);
   // Best grade per difficulty (badge on difficulty cards); signed-in players only.
   const token = useAuthStore((s) => s.token);
   const [bestGrades, setBestGrades] = useState<Record<string, RankGrade>>({});
@@ -220,7 +222,7 @@ export default function BeatmapList({
           ) : rows.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center text-white/60">
               <Music className="mb-3 h-10 w-10 opacity-60" aria-hidden />
-              <p className="font-game-display text-[17px]">No results</p>
+              <p className="font-game-display text-[17px]">{search ? "No results" : `No ${keyMode}K beatmaps yet`}</p>
             </div>
           ) : (
             <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>

@@ -20,6 +20,7 @@ interface SettingsState extends GameSettings {
   setSelectionGroupBy: (g: 'NONE' | 'ARTIST' | 'DIFFICULTY') => void;
   setSelectionStarRange: (min: number, max: number) => void;
   setLastSelectedBeatmapId: (id: string | null) => void;
+  setKeyMode: (mode: 4 | 7) => void;
   setPercyMaxLength: (px: number) => void;
   resetSettings: () => void;
 }
@@ -58,6 +59,7 @@ export const useSettingsStore = create<SettingsState>()(
       setSelectionGroupBy: (g) => set({ selectionGroupBy: g }),
       setSelectionStarRange: (min, max) => set({ selectionStarMin: min, selectionStarMax: max }),
       setLastSelectedBeatmapId: (id) => set({ lastSelectedBeatmapId: id }),
+      setKeyMode: (keyMode) => set({ keyMode }),
       setPercyMaxLength: (px) => set({ percyMaxLengthPx: Math.max(0, px) }),
       resetSettings: () => set(DEFAULT_SETTINGS),
     }),

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { useSettingsStore } from "@/lib/store/useSettingsStore";
 import { User as UserIcon } from "lucide-react";
 import MusicPlayer from "./MusicPlayer";
 import SettingsDrawer from "./SettingsDrawer";
@@ -32,6 +33,8 @@ export default function GameNavbar() {
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | undefined>();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const keyMode = useSettingsStore((s) => s.keyMode);
+  const setKeyMode = useSettingsStore((s) => s.setKeyMode);
   // Chat overlay; `chatTarget` = player picked via a profile's Message button.
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatTarget, setChatTarget] = useState<ChatUser | null>(null);
@@ -107,13 +110,24 @@ export default function GameNavbar() {
           <Link href="/" aria-label="Home" className="flex w-[68px] items-center justify-center transition-colors hover:bg-lf-surface-hover">
             <Icon name="home" size={22} />
           </Link>
-          {/* Ruleset: Lany hanya punya mania, jadi satu ikon terpilih */}
-          <div className="relative flex w-12 items-center justify-center" aria-label="Mania">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lf-accent text-lf-bg">
-              <Icon name="ruleset-mania" size={24} title="Mania" />
-            </span>
-            <span className="absolute bottom-[3px] h-[2px] w-[21px] rounded-full bg-lf-text" />
-          </div>
+          {/* Mode (replaces lazer's ruleset icons): 4K or 7K; song select lists only that key count. */}
+          {([4, 7] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setKeyMode(k)}
+              aria-pressed={keyMode === k}
+              title={`${k}K: show ${k}-key beatmaps`}
+              className="relative flex w-12 cursor-pointer items-center justify-center"
+            >
+              <span
+                className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1 font-game-display text-[12px] font-bold transition-colors ${keyMode === k ? "bg-lf-accent text-lf-bg" : "border-2 border-lf-text-muted text-lf-text-muted hover:border-lf-text hover:text-lf-text"}`}
+              >
+                {k}K
+              </span>
+              {keyMode === k && <span className="absolute bottom-[3px] h-[2px] w-[21px] rounded-full bg-lf-text" />}
+            </button>
+          ))}
         </div>
 
         {/* Right: chat, globe, music, user, clock, notifications */}

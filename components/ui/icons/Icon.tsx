@@ -13,13 +13,6 @@ const ICONS = {
     </>
   ),
   home: <path d="M3.5 11 L12 3.5 L20.5 11 M5.5 9.5 V20.5 H18.5 V9.5" />,
-  /** Ruleset mania: lingkaran dengan 4 batang (luar pendek, dalam panjang). */
-  "ruleset-mania": (
-    <>
-      <circle cx="12" cy="12" r="9.5" />
-      <path d="M8 10 V14 M10.7 7.5 V16.5 M13.3 7.5 V16.5 M16 10 V14" />
-    </>
-  ),
   chat: (
     <>
       <path d="M12 3.5 C16.97 3.5 20.5 7 20.5 11.5 C20.5 16 16.97 19.5 12 19.5 C10.8 19.5 9.7 19.3 8.7 18.9 L4 20.5 L5.3 16.4 C4.2 15 3.5 13.3 3.5 11.5 C3.5 7 7.03 3.5 12 3.5 Z" />
