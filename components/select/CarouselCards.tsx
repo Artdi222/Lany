@@ -1,4 +1,6 @@
 import Image from "next/image";
+import type { RankGrade } from "@/types/game";
+import { GRADE_COLORS } from "@/lib/select/format";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Beatmap } from "@/types/beatmap";
 import { difficultyColor, starTextColor } from "@/lib/select/difficultyColor";
@@ -111,7 +113,7 @@ export function SetCard({
   );
 }
 
-export function DiffCard({ diff, selected, onClick }: { diff: Beatmap; selected: boolean; onClick: () => void }) {
+export function DiffCard({ diff, selected, grade, onClick }: { diff: Beatmap; selected: boolean; grade?: RankGrade; onClick: () => void }) {
   const color = difficultyColor(diff.starRating);
   return (
     <button
@@ -131,8 +133,13 @@ export function DiffCard({ diff, selected, onClick }: { diff: Beatmap; selected:
           : `linear-gradient(to right, color-mix(in srgb, ${color} 25%, #343747), color-mix(in srgb, ${color} 14.5%, #2f3142) 55%, color-mix(in srgb, ${color} 8%, #2a2c3a))`,
       }}
     >
-      <span className="flex w-4 shrink-0 items-center justify-center" style={{ backgroundColor: color }}>
+      <span className={cn("flex shrink-0 flex-col items-center justify-center gap-1", grade ? "w-9" : "w-4")} style={{ backgroundColor: color }}>
         <Ring size={12} color="rgb(0 0 0 / 0.85)" />
+        {grade && (
+          <span className="rounded-full px-1.5 font-game-display text-[11px] font-bold leading-[15px] text-black/80" style={{ backgroundColor: GRADE_COLORS[grade] }}>
+            {grade}
+          </span>
+        )}
       </span>
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-1 pl-3 pr-4">
         <span className="truncate leading-none">

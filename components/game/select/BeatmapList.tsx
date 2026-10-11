@@ -1,5 +1,8 @@
 "use client";
 
+import { useAuthStore } from "@/lib/store/useAuthStore";
+import { apiClient } from "@/lib/api/client";
+import type { RankGrade } from "@/types/game";
 import { useCollectionStore } from "@/lib/store/useCollectionStore";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -85,6 +88,15 @@ export default function BeatmapList({
   const collections = useCollectionStore((s) => s.collections);
   const activeCollectionId = useCollectionStore((s) => s.activeId);
   const setActiveCollection = useCollectionStore((s) => s.setActive);
+  // Best grade per difficulty (badge on difficulty cards); signed-in players only.
+  const token = useAuthStore((s) => s.token);
+  const [bestGrades, setBestGrades] = useState<Record<string, RankGrade>>({});
+  useEffect(() => {
+    if (!token) return;
+    apiClient<{ beatmapId: string; rank: RankGrade }[]>("/users/me/best-grades", { token })
+      .then((rows) => setBestGrades(Object.fromEntries(rows.map((r) => [r.beatmapId, r.rank]))))
+      .catch(() => {});
+  }, [token]);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const selectedId = selectedBeatmap?.id ?? null;
@@ -222,7 +234,7 @@ export default function BeatmapList({
                       {row.kind === "header" ? (
                         <HeaderCard label={row.label} count={row.count} collapsed={row.collapsed} onClick={() => setCollapsedCategories((s) => toggle(s, row.label))} />
                       ) : row.kind === "diff" ? (
-                        <DiffCard diff={row.diff} selected={row.selected} onClick={() => onSelectBeatmap(row.diff)} />
+                        <DiffCard diff={row.diff} selected={row.selected} grade={bestGrades[row.diff.id]} onClick={() => onSelectBeatmap(row.diff)} />
                       ) : (
                         <SetCard
                           title={row.item.title}
