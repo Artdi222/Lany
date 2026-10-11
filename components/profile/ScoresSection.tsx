@@ -1,5 +1,6 @@
 "use client";
 
+import { ModIcons } from "@/components/ui/ModIcon";
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { getUserBestScores, type UserBestScore } from "@/lib/api/user";
@@ -8,15 +9,6 @@ import { GRADE_COLORS, relativeTimeLong } from "@/lib/select/format";
 // ponytail: in-memory cache so reopening a profile shows its scores at once; refreshed on every open.
 const cache = new Map<string, UserBestScore[]>();
 const PAGE = 5;
-
-function parseMods(mods: string | null): string[] {
-  try {
-    const list = mods ? JSON.parse(mods) : [];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
-}
 
 function ScoreRow({ s }: { s: UserBestScore }) {
   return (
@@ -37,11 +29,7 @@ function ScoreRow({ s }: { s: UserBestScore }) {
           </div>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          {parseMods(s.mods).map((m) => (
-            <span key={m} className="rounded-full bg-lf-primary/40 px-2 py-0.5 text-[11px] font-bold text-white">
-              {m}
-            </span>
-          ))}
+          <ModIcons mods={s.mods} />
         </div>
         <div className="w-24 shrink-0 text-right">
           <div className="text-[13px] font-bold text-lf-warning">{s.accuracy.toFixed(2)}%</div>

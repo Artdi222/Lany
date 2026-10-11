@@ -4,30 +4,10 @@ import type { LeaderboardEntry } from "@/types/game";
 import { GRADE_COLORS, relativeTimeLong } from "@/lib/select/format";
 import { cn } from "@/lib/utils";
 import { SHEAR, UNSHEAR } from "./shear";
+import { ModIcons } from "@/components/ui/ModIcon";
 
 /** Kartu skor leaderboard (spec: docs/ui-spec/song-select.md, "Kiri-bawah"). Tinggi 68, pitch 72. Seperti foto: badan, tile rank (PB) dan tile grade miring (tan 0.2) dengan sudut membulat; avatar tidak miring. */
 
-
-const MOD_GROUPS: [RegExp, string][] = [
-  [/^(EZ|NF|HT|DC)$/i, "#b3ff66"], // difficulty reduction (hijau, foto Mods)
-  [/^(HR|SD|PF|DT|NC|HD|FL|CO|AC)$/i, "#ff6b6b"], // difficulty increase (merah)
-  [/^(AT|CN|AP|RX)$/i, "#66ccff"], // automation (biru)
-];
-const modColor = (m: string) => MOD_GROUPS.find(([re]) => re.test(m))?.[1] ?? "#c79bff";
-
-function ModChips({ mods }: { mods: string | null }) {
-  const list = (mods ?? "").split(/[^A-Za-z0-9]+/).filter(Boolean);
-  if (list.length === 0) return null;
-  return (
-    <span className="flex gap-1">
-      {list.map((m) => (
-        <span key={m} className="rounded-md px-1.5 text-[10px] font-bold leading-[18px] text-black/80" style={{ backgroundColor: modColor(m) }}>
-          {m.toUpperCase()}
-        </span>
-      ))}
-    </span>
-  );
-}
 
 function Stat({ label, children, valueClass }: { label: string; children: React.ReactNode; valueClass?: string }) {
   return (
@@ -100,7 +80,7 @@ export default function ScoreCard({
         <span className="font-game-display text-[30px] font-light leading-none tabular-nums text-white">{entry.score.toLocaleString("en-US")}</span>
         <span className="mt-1 flex items-center gap-2">
           {entry.pp ? <span className="font-game-display text-[12px] text-white/70">{Math.round(entry.pp)}pp</span> : null}
-          <ModChips mods={entry.mods} />
+          <ModIcons mods={entry.mods} size={18} />
         </span>
       </div>
 
