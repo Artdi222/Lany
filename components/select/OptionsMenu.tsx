@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Check, FileText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, FileText, FolderPlus } from "lucide-react";
+import { useAuthStore } from "@/lib/store/useAuthStore";
+import { useCollectionStore } from "@/lib/store/useCollectionStore";
 import type { Beatmap } from "@/types/beatmap";
 
-/** Menu Options (foto `...519414354`): panel #1e1f29 di atas footer. Hanya aksi yang punya fitur di Lany: Play dan Details. */
+/** Menu Options (foto `...519414354`): panel #1e1f29 di atas footer. Hanya aksi yang punya fitur di Lany: Play, Details, Collection. */
 
 export const SHOW_DETAILS_EVENT = "select-show-details";
 
@@ -31,6 +33,19 @@ export default function OptionsMenu({
   onPlay: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const isGuest = useAuthStore((s) => s.isGuest);
+  const collections = useCollectionStore((s) => s.collections);
+  const [showCollections, setShowCollections] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  const createCollection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name || !beatmap) return;
+    setNewName("");
+    const c = await useCollectionStore.getState().create(name).catch(() => null);
+    if (c) useCollectionStore.getState().toggleBeatmap(c.id, beatmap.id);
+  };
 
   useEffect(() => {
     const close = (e: PointerEvent) => {
@@ -71,6 +86,40 @@ export default function OptionsMenu({
         >
           Details...
         </Item>
+        {beatmap && !isGuest && (
+          <Item icon={<FolderPlus className="h-5 w-5" aria-hidden />} onClick={() => setShowCollections((v) => !v)}>
+            Collection
+          </Item>
+        )}
+        {beatmap && !isGuest && showCollections && (
+          <div className="flex flex-col gap-1 rounded-lg bg-select-field/60 p-2">
+            {collections.map((c) => {
+              const has = c.beatmapIds.includes(beatmap.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={has}
+                  onClick={() => useCollectionStore.getState().toggleBeatmap(c.id, beatmap.id)}
+                  className="flex h-9 cursor-pointer items-center gap-3 rounded-md px-3 text-left font-game-display text-[15px] text-white hover:bg-white/10"
+                >
+                  <span className="flex h-4 w-4 items-center justify-center rounded-sm border border-white/50">{has && <Check className="h-3 w-3" strokeWidth={3} />}</span>
+                  <span className="truncate">{c.name}</span>
+                </button>
+              );
+            })}
+            <form onSubmit={createCollection}>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                maxLength={50}
+                placeholder="New collection..."
+                className="h-9 w-full rounded-md bg-select-bar px-3 font-game-display text-[15px] text-white outline-none placeholder:text-white/40"
+              />
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

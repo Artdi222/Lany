@@ -14,6 +14,8 @@ import { listBeatmaps } from "@/lib/api/beatmaps";
 import { useGameStore } from "@/lib/store/useGameStore";
 import { useMusicStore } from "@/lib/store/useMusicStore";
 import { useSettingsStore } from "@/lib/store/useSettingsStore";
+import { useCollectionStore } from "@/lib/store/useCollectionStore";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import type { Beatmap } from "@/types/beatmap";
 
 export default function SongSelectPage() {
@@ -59,6 +61,11 @@ export default function SongSelectPage() {
   }, [selectedBeatmap?.id]);
 
   const [search, setSearch] = useState("");
+  const token = useAuthStore((s) => s.token);
+  const activeCollection = useCollectionStore((s) => s.collections.find((c) => c.id === s.activeId) ?? null);
+  useEffect(() => {
+    useCollectionStore.getState().load().catch(() => {});
+  }, [token]);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [modsOpen, setModsOpen] = useState(false);
   const modCount = useGameStore((s) => s.selectedMods.length);
@@ -165,9 +172,11 @@ export default function SongSelectPage() {
   // --- Keyboard Navigation Logic ---
   const groupedCategories = useMemo<GroupCategory[]>(() => {
     const lowerSearch = search.toLowerCase();
+    // Collection filter works per difficulty, like lazer collections.
+    const pool = activeCollection ? beatmaps.filter((b) => activeCollection.beatmapIds.includes(b.id)) : beatmaps;
     
     // First, filter all beatmaps
-    const validBeatmaps = beatmaps.filter(b => {
+    const validBeatmaps = pool.filter(b => {
       const matchesSearch = b.title.toLowerCase().includes(lowerSearch) || 
                             b.artist.toLowerCase().includes(lowerSearch);
       return matchesSearch && b.starRating >= starMin && b.starRating <= starMax;
@@ -176,7 +185,7 @@ export default function SongSelectPage() {
     if (groupBy === "DIFFICULTY") {
       // Each difficulty is its own item
       const items = validBeatmaps.map(b => {
-        const inRangeDiffs = beatmaps.filter(x => 
+        const inRangeDiffs = pool.filter(x => 
           x.title === b.title && 
           x.artist === b.artist &&
           x.starRating >= starMin && 
@@ -295,7 +304,7 @@ export default function SongSelectPage() {
         return [{ label: "", items }];
       }
     }
-  }, [beatmaps, search, starMin, starMax, groupBy, sortBy]);
+  }, [beatmaps, activeCollection, search, starMin, starMax, groupBy, sortBy]);
 
   const flatBeatmaps = useMemo(() => {
     const list: Beatmap[] = [];

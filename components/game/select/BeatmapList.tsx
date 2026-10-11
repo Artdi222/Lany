@@ -1,5 +1,6 @@
 "use client";
 
+import { useCollectionStore } from "@/lib/store/useCollectionStore";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Music, Search } from "lucide-react";
@@ -81,6 +82,9 @@ export default function BeatmapList({
   groupedCategories,
 }: BeatmapListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const collections = useCollectionStore((s) => s.collections);
+  const activeCollectionId = useCollectionStore((s) => s.activeId);
+  const setActiveCollection = useCollectionStore((s) => s.setActive);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const selectedId = selectedBeatmap?.id ?? null;
@@ -183,7 +187,14 @@ export default function BeatmapList({
         <div className="relative ml-[2px] mr-[32px] mt-[9px] flex items-center gap-2">
           <SplitSelect<SortKey> label="Sort" value={sortBy} options={SORT_OPTIONS} onChange={setSortBy} className="w-[240px]" />
           <SplitSelect<GroupKey> label="Group" value={groupBy} options={GROUP_OPTIONS} onChange={setGroupBy} className="w-[238px]" />
-          <SplitSelect<"ALL"> label="Collection" value="ALL" options={[{ label: "All beatmaps", value: "ALL" }]} onChange={() => {}} disabled className="min-w-0 flex-1" />
+          <SplitSelect<string>
+            label="Collection"
+            value={activeCollectionId == null ? "ALL" : String(activeCollectionId)}
+            options={[{ label: "All beatmaps", value: "ALL" }, ...collections.map((c) => ({ label: `${c.name} (${c.beatmapIds.length})`, value: String(c.id) }))]}
+            onChange={(v) => setActiveCollection(v === "ALL" ? null : Number(v))}
+            disabled={!collections.length}
+            className="min-w-0 flex-1"
+          />
         </div>
       </div>
 
