@@ -230,7 +230,22 @@ export default function GameNavbar() {
               </span>
             )}
           </button>
-          <AnimatePresence>{isNotifOpen && <NotificationPanel />}</AnimatePresence>
+          <AnimatePresence>
+            {isNotifOpen && (
+              <motion.div
+                key="notif-dim"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  markAllRead();
+                  setIsNotifOpen(false);
+                }}
+                className="fixed inset-x-0 bottom-0 top-12 z-40 bg-black/40"
+              />
+            )}
+            {isNotifOpen && <NotificationPanel key="notif-panel" />}
+          </AnimatePresence>
           <AnimatePresence>
             {isChatOpen && !isGuest && <ChatOverlay key={chatTarget?.id ?? "chat"} target={chatTarget} />}
           </AnimatePresence>

@@ -95,10 +95,17 @@ export default function MusicPlayer() {
       <button
         onClick={() => setExpanded(!expanded)}
         aria-label={currentSong ? `Now playing: ${currentSong.title}` : "Now playing"}
-        title={currentSong?.title ?? "Not Playing"}
-        className={`flex h-full w-12 cursor-pointer items-center justify-center rounded-md transition-colors ${expanded ? "bg-lf-primary text-white" : `hover:bg-white/10 ${isPlaying ? "text-lf-accent" : "text-lf-text"}`}`}
+        className={`group relative flex h-full w-12 cursor-pointer items-center justify-center rounded-md transition-colors ${expanded ? "bg-lf-primary text-white" : `hover:bg-white/10 ${isPlaying ? "text-lf-accent" : "text-lf-text"}`}`}
       >
         <Icon name="music" size={22} />
+        {/* Tooltip as in the reference photo: plain shadowed text under the button, no box. */}
+        {!expanded && (
+          <span className="pointer-events-none absolute right-0 top-full z-60 mt-3 hidden whitespace-nowrap text-right font-game-display text-white [text-shadow:0_1px_4px_rgb(0_0_0/0.9)] group-hover:block">
+            <span className="block text-[17px] font-bold">now playing</span>
+            <span className="text-[14px]">manage the currently playing track</span>
+            <span className="ml-3 text-[14px] text-white/60">F6</span>
+          </span>
+        )}
       </button>
 
       {/* Panel: spec docs/ui-spec/now-playing.md */}
@@ -115,7 +122,7 @@ export default function MusicPlayer() {
               <div className="relative flex h-[105px] flex-col items-center justify-center px-6 text-center">
                 {currentSong?.coverUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={currentSong.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
+                  <img src={currentSong.coverUrl} alt="" onError={(e) => (e.currentTarget.style.display = "none")} className="absolute inset-0 h-full w-full object-cover opacity-40" />
                 )}
                 <div className="absolute inset-0 bg-linear-to-r from-black/50 to-transparent" />
                 <h4 className="relative max-w-full truncate font-game-display text-[28px] font-light text-white">{currentSong?.title ?? "Not playing"}</h4>
