@@ -17,15 +17,15 @@ import SplitSelect from "./SplitSelect";
 import { SHEAR, UNSHEAR } from "./shear";
 
 type Tab = "details" | "ranking";
-type Scope = "GLOBAL" | "LOCAL";
+type Scope = "GLOBAL" | "LOCAL" | "FRIENDS";
 
 const STALE_MS = 5 * 60 * 1000;
 /** Setiap baris bergeser 13 px ke kiri (diagonal ala lazer); dijepit supaya kartu jauh tidak keluar layar. */
 const SHIFT_PER_ROW = 13;
 const MAX_SHIFT_ROWS = 9;
 
-function useLeaderboard(beatmapId: string, scope: Scope, token: string | null) {
-  const key = `${beatmapId}-${scope}-${token || ""}`;
+function useLeaderboard(beatmapId: string, scope: Scope, token: string | null, mods?: readonly string[]) {
+  const key = `${beatmapId}-${scope}-${token || ""}-${mods?.join(",") ?? "*"}`;
   const cached = useGameStore((s) => s.leaderboardCache[key]);
   const setCache = useGameStore((s) => s.setLeaderboardCache);
 
@@ -34,12 +34,14 @@ function useLeaderboard(beatmapId: string, scope: Scope, token: string | null) {
     let alive = true;
     // Backend yang menggantung jangan bikin spinner abadi.
     const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000));
-    Promise.race([getLeaderboard(beatmapId, scope, token), timeout])
+    Promise.race([getLeaderboard(beatmapId, scope, token, mods), timeout])
       .then((data) => alive && setCache(key, Array.isArray(data) ? data : []))
       .catch(() => alive && setCache(key, []));
     return () => {
       alive = false;
     };
+    // `mods` is folded into `key`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [beatmapId, scope, token, key, cached, setCache]);
 
   return { entries: cached?.entries ?? [], loading: !cached };
@@ -95,7 +97,10 @@ export default function RankingPanel({ beatmap }: { beatmap: Beatmap }) {
   const { isGuest, token, user } = useAuthStore();
   const [tab, setTab] = useState<Tab>("ranking");
   const [scope, setScope] = useState<Scope>("GLOBAL");
-  const { entries, loading } = useLeaderboard(beatmap.id, scope, token);
+  // Selected Mods toggle: only scores played with exactly the mods picked in Mod Select.
+  const [modsOnly, setModsOnly] = useState(false);
+  const selectedMods = useGameStore((s) => s.selectedMods);
+  const { entries, loading } = useLeaderboard(beatmap.id, scope, token, modsOnly ? selectedMods : undefined);
 
   useEffect(() => {
     const show = () => setTab("details");
@@ -122,16 +127,17 @@ export default function RankingPanel({ beatmap }: { beatmap: Beatmap }) {
             <SplitSelect<Scope>
               label="Scope"
               value={scope}
-              options={[{ label: "Global", value: "GLOBAL" }, { label: "Local", value: "LOCAL" }]}
+              options={[{ label: "Global", value: "GLOBAL" }, { label: "Friends", value: "FRIENDS" }, { label: "Local", value: "LOCAL" }]}
               onChange={setScope}
               className="w-[205px]"
             />
             <SplitSelect<"SCORE"> label="Sort" value="SCORE" options={[{ label: "Score", value: "SCORE" }]} onChange={() => {}} disabled dim className="w-[198px]" />
             <button
               type="button"
-              disabled
-              title="Mods coming soon"
-              className={cn(SHEAR, "h-[38px] w-[172px] cursor-not-allowed rounded-[10px] bg-select-button font-game-display text-[17px] text-white")}
+              onClick={() => setModsOnly((v) => !v)}
+              aria-pressed={modsOnly}
+              title={modsOnly ? "Showing scores with the selected mods only" : "Show only scores with the selected mods"}
+              className={cn(SHEAR, "h-[38px] w-[172px] cursor-pointer rounded-[10px] font-game-display text-[17px] text-white transition-[filter] hover:brightness-125", modsOnly ? "bg-lf-primary" : "bg-select-button")}
             >
               <span className={cn(UNSHEAR, "inline-block")}>Selected Mods</span>
             </button>
