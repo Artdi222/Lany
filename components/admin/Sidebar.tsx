@@ -38,7 +38,7 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="mb-8 flex items-center gap-3 px-2">
           <span className="font-heading text-xl font-bold tracking-tight glow-blue">
-            LANIFY
+            LANY
           </span>
         </div>
 
@@ -90,7 +90,7 @@ export default function Sidebar() {
             </div>
             <div className="flex flex-col overflow-hidden text-xs">
               <span className="truncate font-semibold text-foreground">{user?.username ?? "Admin"}</span>
-              <span className="truncate text-muted-foreground opacity-70">{user?.email ?? "admin@lanify.osu"}</span>
+              <span className="truncate text-muted-foreground opacity-70">{user?.email ?? "admin@lany.osu"}</span>
             </div>
           </div>
 

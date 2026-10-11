@@ -34,7 +34,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Lanify game theme colors */
+  /* Lany game theme colors */
   --color-lanify-accent: #b9bde6;
   --color-lanify-accent2: #787ac7;
   --color-lanify-bg: #14151c;
@@ -50,7 +50,7 @@
   --radius-xl: calc(var(--radius) * 1.4);
 }
 
-/* ─── Lanify design system (Fase 2) ───
+/* ─── Lany design system (Fase 2) ───
    Token baru, additive: layar lama tetap memakai token di atas sampai dipindah di Fase 3.
    Referensi: docs/design-system.md */
 @theme {
@@ -203,7 +203,7 @@
   text-shadow: 0 0 15px oklch(0.5 0.2 250 / 0.5);
 }
 
-/* ─── Lanify Game Utilities ─── */
+/* ─── Lany Game Utilities ─── */
 .glow-cyan {
   text-shadow: 0 0 20px rgba(0, 229, 255, 0.6), 0 0 40px rgba(0, 229, 255, 0.3);
 }

@@ -1,7 +1,7 @@
 import type { ReactNode, SVGProps } from "react";
 
 /**
- * Set ikon SVG Lanify (24x24, stroke currentColor). Digambar dari foto referensi top bar di image/TODO/,
+ * Set ikon SVG Lany (24x24, stroke currentColor). Digambar dari foto referensi top bar di image/TODO/,
  * bukan dari ingatan ikon osu!. Elemen beraksen (jarum jam) memakai `--lf-icon-accent`.
  * Detail per ikon dan bagian yang disederhanakan: docs/design-system.md.
  */

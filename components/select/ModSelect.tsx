@@ -10,7 +10,7 @@ import { useGameStore } from "@/lib/store/useGameStore";
 import { getBeatmapPerformance, peekBeatmapPerformance } from "@/lib/api/scores";
 import type { Beatmap } from "@/types/beatmap";
 
-/** Overlay Mod Select (docs/ui-spec/mods.md, foto `...519386266`). Layout lazer, warna palet Lanify. */
+/** Overlay Mod Select (docs/ui-spec/mods.md, foto `...519386266`). Layout lazer, warna palet Lany. */
 
 const HEX = "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)";
 const colorOf = (category: ModCategory) => COLUMNS.find((c) => c.category === category)!.color;

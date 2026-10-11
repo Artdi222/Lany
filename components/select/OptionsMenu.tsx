@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { Check, FileText } from "lucide-react";
 import type { Beatmap } from "@/types/beatmap";
 
-/** Menu Options (foto `...519414354`): panel #1e1f29 di atas footer. Hanya aksi yang punya fitur di Lanify: Play dan Details. */
+/** Menu Options (foto `...519414354`): panel #1e1f29 di atas footer. Hanya aksi yang punya fitur di Lany: Play dan Details. */
 
 export const SHOW_DETAILS_EVENT = "select-show-details";
 

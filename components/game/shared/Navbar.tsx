@@ -89,7 +89,7 @@ export default function GameNavbar() {
           <Link href="/" aria-label="Home" className="flex w-[68px] items-center justify-center transition-colors hover:bg-lf-surface-hover">
             <Icon name="home" size={22} />
           </Link>
-          {/* Ruleset: Lanify hanya punya mania, jadi satu ikon terpilih */}
+          {/* Ruleset: Lany hanya punya mania, jadi satu ikon terpilih */}
           <div className="relative flex w-12 items-center justify-center" aria-label="Mania">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lf-accent text-lf-bg">
               <Icon name="ruleset-mania" size={24} title="Mania" />

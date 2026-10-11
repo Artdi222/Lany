@@ -326,7 +326,7 @@ export default function ResultPage() {
       <div className="relative z-10 flex h-full gap-9 px-7 pb-[72px] pt-[72px]">
         {mainCard}
 
-        {/* Right: breakdown + Lanify's own stats */}
+        {/* Right: breakdown + Lany's own stats */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="no-scrollbar min-w-0 flex-1 space-y-3 overflow-y-auto pt-[150px]">
           {isGuest && !isReadOnly && <GuestBanner />}
           <Panel title="Performance Breakdown">

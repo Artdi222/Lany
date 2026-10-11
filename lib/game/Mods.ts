@@ -1,5 +1,5 @@
 /**
- * Mods supported by Lanify (Plan.md section 1): EZ, NF, HT, DT, NC, SD, HD.
+ * Mods supported by Lany (Plan.md section 1): EZ, NF, HT, DT, NC, SD, HD.
  * Same set and exclusion groups as the backend validator (`be/src/utils/mod-validator.ts`).
  * Multipliers follow osu!lazer mania.
  */
