@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { sendHeartbeat } from "@/lib/api/dashboard";
+import { usePresenceStore } from "@/lib/store/usePresenceStore";
 
 /** Same wording as osu! ("Choosing a beatmap", "Smashing keys"); the backend accepts only these. */
 export function activityFor(pathname: string): string {
@@ -17,13 +18,15 @@ export function activityFor(pathname: string): string {
 export function usePresence() {
   const token = useAuthStore((s) => s.token);
   const pathname = usePathname();
+  // Account-menu status (Online / Do not disturb / Appear offline); a change is sent right away.
+  const status = usePresenceStore((s) => s.status);
 
   useEffect(() => {
     if (!token) return;
     const activity = activityFor(pathname);
-    const ping = () => sendHeartbeat(token, activity).catch(() => {});
+    const ping = () => sendHeartbeat(token, activity, status).catch(() => {});
     ping();
     const id = setInterval(ping, 60_000);
     return () => clearInterval(id);
-  }, [token, pathname]);
+  }, [token, pathname, status]);
 }

@@ -10,6 +10,8 @@ export interface UserCard {
   totalPp: number;
   lastSeenAt: string | null;
   online: boolean;
+  /** Status the player picked in the account menu; "offline" covers both offline and "Appear offline". */
+  status: "online" | "dnd" | "offline";
   /** What an online user is doing ("Choosing a beatmap", ...); null when offline. */
   activity: string | null;
   /** Friends list only: they follow back. */
@@ -23,5 +25,5 @@ export const searchUsers = (q: string) => apiClient<UserCard[]>(`/users/search?q
 export const addFriend = (token: string, id: string) => apiClient(`/users/me/friends/${id}`, { method: "POST", token });
 export const removeFriend = (token: string, id: string) => apiClient(`/users/me/friends/${id}`, { method: "DELETE", token });
 
-export const sendHeartbeat = (token: string, activity: string) =>
-  apiClient("/users/me/heartbeat", { method: "POST", token, body: { activity } });
+export const sendHeartbeat = (token: string, activity: string, status: "online" | "dnd" | "offline") =>
+  apiClient("/users/me/heartbeat", { method: "POST", token, body: { activity, status } });

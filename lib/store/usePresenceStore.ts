@@ -9,7 +9,7 @@ export const PRESENCE_OPTIONS: { value: Presence; label: string; dot: string }[]
   { value: "offline", label: "Appear offline", dot: "bg-lf-text-dim" },
 ];
 
-// Client-side only for now: the backend has no presence/chat yet.
+// Sent to the backend with every presence heartbeat (components/dashboard/usePresence.ts).
 export const usePresenceStore = create<{ status: Presence; setStatus: (s: Presence) => void }>()(
   persist((set) => ({ status: "online", setStatus: (status) => set({ status }) }), { name: "lanify-presence" }),
 );

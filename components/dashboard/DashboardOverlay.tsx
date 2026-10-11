@@ -52,7 +52,10 @@ function Card({ u, onOpen }: { u: UserCard; onOpen: () => void }) {
               <UserIcon className="h-9 w-9 text-white/40" />
             )}
           </span>
-          <span className={cn("mt-[17px] h-[34px] w-[34px] rounded-full border-[4px]", u.online ? "border-lf-success" : "border-white/35")} aria-hidden />
+          <span
+            className={cn("mt-[17px] h-[34px] w-[34px] rounded-full border-[4px]", !u.online ? "border-white/35" : u.status === "dnd" ? "border-lf-danger" : "border-lf-success")}
+            aria-hidden
+          />
         </div>
         <div className="flex min-w-0 flex-1 flex-col pt-[14px] pr-4">
           <div className="flex h-[37px] items-center gap-2">
@@ -67,7 +70,7 @@ function Card({ u, onOpen }: { u: UserCard; onOpen: () => void }) {
           <span className="mt-[16px] truncate font-game-display text-[18px] font-bold text-white">{u.username}</span>
           <span className="mt-auto pb-[14px] font-game-body leading-tight">
             {!u.online && u.lastSeenAt && <span className="block text-[13px] text-white/85">Last seen {relativeTimeLong(u.lastSeenAt)}</span>}
-            <span className="block text-[15px] font-semibold text-white">{u.online ? u.activity : "Offline"}</span>
+            <span className="block text-[15px] font-semibold text-white">{!u.online ? "Offline" : u.status === "dnd" ? "Do not disturb" : u.activity}</span>
           </span>
         </div>
       </div>
