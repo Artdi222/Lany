@@ -196,7 +196,7 @@ export default function GameNavbar() {
           >
             <Icon name="bell" size={22} />
             {unread > 0 && (
-              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] leading-none text-white">
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] leading-none text-white">
                 {unread}
               </span>
             )}

@@ -13,7 +13,7 @@ export default function NotificationPanel() {
     <div className="fixed right-0 top-12 bottom-0 z-50 w-[min(450px,100vw)] overflow-y-auto bg-lf-bg-raised px-7 py-4 shadow-lf-panel">
       <div className="flex items-center justify-between">
         <h2 className="font-game-display text-[17px] font-bold uppercase text-lf-text">
-          Notifications <span className="text-yellow-400">{items.length}</span>
+          Notifications <span className="ml-1.5 text-yellow-400">{items.length}</span>
         </h2>
         <button
           type="button"

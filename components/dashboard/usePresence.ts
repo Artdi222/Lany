@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { sendHeartbeat } from "@/lib/api/dashboard";
 import { usePresenceStore } from "@/lib/store/usePresenceStore";
+import { useNotificationStore } from "@/lib/store/useNotificationStore";
 
 /** Same wording as osu! ("Choosing a beatmap", "Smashing keys"); the backend accepts only these. */
 export function activityFor(pathname: string): string {
@@ -22,9 +23,16 @@ export function usePresence() {
   const status = usePresenceStore((s) => s.status);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      useNotificationStore.getState().reset();
+      return;
+    }
     const activity = activityFor(pathname);
-    const ping = () => sendHeartbeat(token, activity, status).catch(() => {});
+    // Notifications ride the presence interval (60 s), so a friend request shows up within a minute.
+    const ping = () => {
+      sendHeartbeat(token, activity, status).catch(() => {});
+      useNotificationStore.getState().sync(token).catch(() => {});
+    };
     ping();
     const id = setInterval(ping, 60_000);
     return () => clearInterval(id);
