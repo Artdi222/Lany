@@ -12,6 +12,7 @@ import Flag from "@/components/profile/Flag";
 import FriendButton from "@/components/dashboard/FriendButton";
 import { invalidateUserProfile, useUserProfile } from "@/components/profile/useUserProfile";
 import { toast } from "sonner";
+import { notify } from "@/lib/store/useNotificationStore";
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -137,7 +138,7 @@ export default function ProfilePanel({ isOpen, onClose, userId }: ProfilePanelPr
       login(token, updatedUser);
       invalidateUserProfile(user.id);
       if (country) setSavedCountry(country);
-      toast.success("Profile updated successfully!");
+      notify("Profile updated successfully!");
       setIsEditing(false);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to update profile");

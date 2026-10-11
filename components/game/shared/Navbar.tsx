@@ -15,6 +15,8 @@ import ProfilePanel from "./ProfilePanel";
 import RankingsOverlay from "@/components/rankings/RankingsOverlay";
 import DashboardOverlay from "@/components/dashboard/DashboardOverlay";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationPanel from "@/components/notifications/NotificationPanel";
+import { useNotificationStore } from "@/lib/store/useNotificationStore";
 
 export default function GameNavbar() {
   const { user, isGuest } = useAuthStore();
@@ -27,6 +29,9 @@ export default function GameNavbar() {
   const [isRankingsOpen, setIsRankingsOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | undefined>();
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const unread = useNotificationStore((s) => s.items.filter((n) => !n.read).length);
+  const markAllRead = useNotificationStore((s) => s.markAllRead);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +52,7 @@ export default function GameNavbar() {
   // F9 toggles the dashboard (as in osu!).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsNotifOpen(false);
       if (e.key !== "F9") return;
       e.preventDefault();
       setIsRankingsOpen(false);
@@ -177,9 +183,25 @@ export default function GameNavbar() {
             </AnimatePresence>
           </div>
           <TopBarClock />
-          <button disabled title="Segera" aria-label="Notifications" className="flex w-12 items-center justify-center text-lf-text-dim">
+          <button
+            type="button"
+            onClick={() => {
+              // Read on close, so the unread markers stay visible while the panel is open.
+              if (isNotifOpen) markAllRead();
+              setIsNotifOpen(!isNotifOpen);
+            }}
+            aria-label="Notifications"
+            aria-pressed={isNotifOpen}
+            className={`relative m-1 flex w-[46px] cursor-pointer items-center justify-center rounded-lf-md transition-colors ${isNotifOpen ? "bg-red-600" : "hover:bg-lf-surface-hover"}`}
+          >
             <Icon name="bell" size={22} />
+            {unread > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] leading-none text-white">
+                {unread}
+              </span>
+            )}
           </button>
+          {isNotifOpen && <NotificationPanel />}
         </div>
       </nav>
 

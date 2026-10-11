@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { notify } from "@/lib/store/useNotificationStore";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { apiClient } from "@/lib/api/client";
 import type { User } from "@/types/user";
@@ -56,7 +57,7 @@ export default function AccountPanel({ onDone, onRegister }: { onDone: () => voi
         if (remember) localStorage.removeItem(REMEMBER_OFF_KEY);
         else localStorage.setItem(REMEMBER_OFF_KEY, "1");
       } catch {}
-      toast.success("Welcome back!");
+      notify("Welcome back!");
       onDone();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");

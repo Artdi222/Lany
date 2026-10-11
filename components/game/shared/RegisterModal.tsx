@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { notify } from "@/lib/store/useNotificationStore";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { apiClient } from "@/lib/api/client";
 import type { User as UserType } from "@/types/user";
@@ -49,7 +50,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         body: { username, email, password },
       });
       login(res.token, res.user);
-      toast.success("Account created successfully!");
+      notify("Account created successfully!");
       close();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Registration failed");

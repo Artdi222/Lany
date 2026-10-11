@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { notify } from "@/lib/store/useNotificationStore";
 import { useSettingsStore } from "@/lib/store/useSettingsStore";
 import {
   DEFAULT_CALIBRATION,
@@ -93,7 +94,7 @@ export default function OffsetWizard() {
   const apply = () => {
     if (!result?.ok) return;
     setGlobalOffset(result.offsetMs);
-    toast.success(`Audio offset set to ${fmtSigned(result.offsetMs)} ms`);
+    notify(`Audio offset set to ${fmtSigned(result.offsetMs)} ms`);
     setView("idle");
     setResult(null);
   };
