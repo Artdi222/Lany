@@ -39,6 +39,24 @@ function uploadedUrl(path: string) {
   return `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/beatmaps/bg?path=${encodeURIComponent(path)}`;
 }
 
+/**
+ * Downscale an image before upload: a raw photo banner was ~1.6 MB and took seconds to load through the
+ * /beatmaps/bg proxy. GIFs are left alone (canvas would drop the animation).
+ */
+async function shrinkImage(file: File, maxWidth: number): Promise<File> {
+  if (file.type === "image/gif") return file;
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxWidth / bitmap.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/webp", 0.85));
+  if (!blob || blob.size >= file.size) return file;
+  return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" });
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-8 font-game-body text-sm">
@@ -104,8 +122,10 @@ export default function ProfilePanel({ isOpen, onClose, userId }: ProfilePanelPr
 
     setIsSaving(true);
     try {
-      const avatarUrl = avatarFile ? uploadedUrl(await uploadToSupabase(avatarFile)) : user.avatarUrl;
-      const bannerUrl = bannerFile ? uploadedUrl(await uploadToSupabase(bannerFile)) : user.bannerUrl;
+      const [avatarUrl, bannerUrl] = await Promise.all([
+        avatarFile ? shrinkImage(avatarFile, 512).then(uploadToSupabase).then(uploadedUrl) : user.avatarUrl,
+        bannerFile ? shrinkImage(bannerFile, 1600).then(uploadToSupabase).then(uploadedUrl) : user.bannerUrl,
+      ]);
 
       const updatedUser = await updateProfile(token, {
         username: username !== user.username ? username : undefined,
