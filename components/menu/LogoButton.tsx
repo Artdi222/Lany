@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { LogoVisualizer } from "./LogoVisualizer";
 
 type LogoButtonProps = ComponentProps<"button"> & {
-  /** Gambar logo buatan user. Tanpa ini, dipakai placeholder teks "Lany". */
+  /** Logo (`/background/Logo.webp`). Tanpa ini, dipakai teks "Lany". */
   src?: string;
   /** Berdenyut pelan (musik sedang diputar). */
   pulsing?: boolean;
@@ -14,7 +14,7 @@ type LogoButtonProps = ComponentProps<"button"> & {
   visualizer?: boolean;
 };
 
-/** Logo menu: lingkaran dengan cincin putih. Placeholder sampai aset mascot/logo ada (docs/mascot-brief.md). */
+/** Logo menu: lingkaran; gambar logo atau teks "Lany" dengan cincin putih. */
 export function LogoButton({ src, pulsing, circleClassName, visualizer, className, ...props }: LogoButtonProps) {
   return (
     <button type="button" aria-label="Lany" {...props} className={cn("group relative cursor-pointer focus:outline-hidden", className)}>

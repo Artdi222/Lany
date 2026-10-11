@@ -98,7 +98,7 @@ export default function PreparePage() {
 
       {beatmap && (
         <div className="absolute inset-x-0 top-[26%] flex flex-col items-center text-center [text-shadow:0_2px_8px_rgb(0_0_0/0.5)]">
-          <LogoButton tabIndex={-1} pulsing circleClassName="h-32 w-32 sm:h-32 sm:w-32 text-2xl sm:text-2xl border-[5px]" />
+          <LogoButton src="/background/Logo.webp" tabIndex={-1} pulsing circleClassName="h-32 w-32 sm:h-32 sm:w-32" />
           <h1 className="mt-4 font-game-display text-4xl font-light text-white/90">{beatmap.title}</h1>
           <p className="mt-1 font-game-display text-2xl uppercase text-white/85">{beatmap.artist}</p>
           {beatmap.coverUrl && (
