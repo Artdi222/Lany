@@ -79,7 +79,7 @@ export default function MainMenuPage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="relative z-30 flex shrink-0 flex-col items-center"
           >
-            <LogoButton src="/background/Logo.webp" pulsing={isPlaying} onClick={() => setIsMenuExpanded((v) => !v)} />
+            <LogoButton src="/background/Logo.webp" pulsing={isPlaying} visualizer onClick={() => setIsMenuExpanded((v) => !v)} />
           </motion.div>
 
           <div
