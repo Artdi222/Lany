@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MODS, modRate, scoreMultiplier, toggleMod, type ModCategory } from "@/lib/game/Mods";
 import { useGameStore } from "@/lib/store/useGameStore";
@@ -9,6 +9,11 @@ import { getBeatmapPerformance, peekBeatmapPerformance } from "@/lib/api/scores"
 import type { Beatmap } from "@/types/beatmap";
 
 /** Overlay Mod Select (docs/ui-spec/mods.md, foto `...519386266`). Layout lazer, warna palet Lanify. */
+
+const HEX = "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)";
+const colorOf = (category: ModCategory) => COLUMNS.find((c) => c.category === category)!.color;
+/** Lazer: < 1 reads as easier (green), > 1 harder (red). */
+const multiplierColor = (m: number) => (m < 1 ? "var(--color-lf-success)" : m > 1 ? "var(--color-lf-danger)" : undefined);
 
 const COLUMNS: { category: ModCategory; title: string; color: string }[] = [
   { category: "reduction", title: "Difficulty Reduction", color: "var(--color-lf-success)" },
@@ -18,6 +23,10 @@ const COLUMNS: { category: ModCategory; title: string; color: string }[] = [
 export default function ModSelect({ onClose }: { onClose: () => void }) {
   const selected = useGameStore((s) => s.selectedMods);
   const setSelected = useGameStore((s) => s.setSelectedMods);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const visible = MODS.filter((m) => !q || m.name.toLowerCase().includes(q) || m.acronym.toLowerCase().includes(q));
+  const multiplier = scoreMultiplier(selected);
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => {
@@ -43,14 +52,27 @@ export default function ModSelect({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
+      <label className="absolute left-[127px] top-[131px] flex h-[54px] w-[401px] -skew-x-[11deg] items-center overflow-hidden rounded-lg bg-select-field text-white shadow-lg">
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="tab to search..."
+          className="h-full min-w-0 flex-1 skew-x-[11deg] bg-transparent pl-4 font-game-display text-[22px] outline-none placeholder:text-white/60"
+        />
+        <span className="flex h-full w-[66px] items-center justify-center bg-select-tile">
+          <Search className="h-6 w-6 skew-x-[11deg]" strokeWidth={3} aria-hidden />
+        </span>
+      </label>
+
       <div className="mt-[114px] flex gap-[15px] overflow-x-auto pl-[520px]">
-        {COLUMNS.map((col) => (
+        {COLUMNS.filter((col) => visible.some((m) => m.category === col.category)).map((col) => (
           <section key={col.category} className="h-[680px] w-[430px] shrink-0 -skew-x-[11deg] overflow-hidden rounded-xl bg-select-band shadow-lg">
             <h3 className="flex h-14 items-center px-[25px] font-game-display text-[17px] font-semibold text-select-bar" style={{ backgroundColor: col.color }}>
               <span className="skew-x-[11deg]">{col.title}</span>
             </h3>
             <ul className="flex flex-col gap-[9px] p-[10px]">
-              {MODS.filter((m) => m.category === col.category).map((m) => {
+              {visible.filter((m) => m.category === col.category).map((m) => {
                 const on = selected.includes(m.acronym);
                 return (
                   <li key={m.acronym}>
@@ -64,9 +86,14 @@ export default function ModSelect({ onClose }: { onClose: () => void }) {
                       )}
                       style={on ? { backgroundColor: col.color } : undefined}
                     >
-                      <span className={cn("flex h-full w-[70px] shrink-0 items-center justify-center", on ? "bg-black/15" : "bg-black/20")}>
-                        {/* ponytail: placeholder icon (acronym only); the photo's glyphs are not legible */}
-                        <span className="skew-x-[11deg] font-game-display text-[13px] font-bold">{m.acronym}</span>
+                      <span className={cn("flex h-full w-[70px] shrink-0 items-center justify-center", on ? "bg-black/25" : "bg-black/20")}>
+                        {/* ponytail: placeholder icon (hexagon + acronym); the photo's glyphs are not legible */}
+                        <span
+                          className={cn("flex h-[34px] w-[46px] skew-x-[11deg] items-center justify-center font-game-display text-[13px] font-bold", on ? "bg-black/35 text-white" : "bg-white/10")}
+                          style={{ clipPath: HEX }}
+                        >
+                          {m.acronym}
+                        </span>
                       </span>
                       <span className="min-w-0 skew-x-[11deg] pl-5 pr-3">
                         <span className="block font-game-display text-xl leading-tight">{m.name}</span>
@@ -80,6 +107,25 @@ export default function ModSelect({ onClose }: { onClose: () => void }) {
           </section>
         ))}
       </div>
+
+      {selected.length > 0 && (
+        <div className="absolute bottom-[95px] left-[420px] flex h-9 -skew-x-[11deg] items-center gap-3 rounded-lg bg-select-bar px-3 shadow-lg">
+          <span className="flex skew-x-[11deg] gap-1">
+            {selected.map((a) => (
+              <span
+                key={a}
+                className="flex h-[22px] w-[30px] items-center justify-center font-game-display text-[10px] font-bold text-select-bar"
+                style={{ clipPath: HEX, backgroundColor: colorOf(MODS.find((m) => m.acronym === a)!.category) }}
+              >
+                {a}
+              </span>
+            ))}
+          </span>
+          <span className="skew-x-[11deg] font-game-display text-[15px] font-bold text-white" style={{ color: multiplierColor(multiplier) }}>
+            {multiplier.toFixed(2)}x
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -130,7 +176,7 @@ export function ModStats({ beatmap }: { beatmap: Beatmap | null }) {
           <span className={cn(seg, "text-[18px] capitalize")}>{beatmap.rankedStatus}</span>
         </div>
         <div className="flex w-[85px] items-center justify-center bg-select-field">
-          <span className={cn(seg, "text-[18px]")}>{scoreMultiplier(selected).toFixed(2)}x</span>
+          <span className={cn(seg, "text-[18px]")} style={{ color: multiplierColor(scoreMultiplier(selected)) }}>{scoreMultiplier(selected).toFixed(2)}x</span>
         </div>
       </div>
     </div>

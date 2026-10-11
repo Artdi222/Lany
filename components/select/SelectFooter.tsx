@@ -26,15 +26,17 @@ interface TileProps {
   icon: React.ReactNode;
   bg: string;
   line: string;
-  /** Lebar tile dalam px (foto: 160 / 160 / 160). */
+  /** Posisi kiri tile dalam px. */
   left: number;
+  /** Lebar tile dalam px (foto: 160; Mods melebar ke 290 saat Mod Select terbuka dengan mod terpilih). */
+  width?: number;
   active?: boolean;
   disabled?: boolean;
   title?: string;
   onClick?: () => void;
 }
 
-function Tile({ label, icon, bg, line, left, active, disabled, title, onClick }: TileProps) {
+function Tile({ label, icon, bg, line, left, width = 160, active, disabled, title, onClick }: TileProps) {
   return (
     <button
       type="button"
@@ -44,11 +46,11 @@ function Tile({ label, icon, bg, line, left, active, disabled, title, onClick }:
       aria-pressed={active}
       title={title}
       className={cn(
-        "group absolute bottom-0 flex h-[85px] w-40 -skew-x-[10deg] cursor-pointer items-start justify-center rounded-t-xl text-white shadow-lg transition-[transform,filter,background-color] duration-150",
+        "group absolute bottom-0 flex h-[85px] -skew-x-[10deg] cursor-pointer items-start justify-center rounded-t-xl text-white shadow-lg transition-[transform,filter,background-color,width] duration-150",
         disabled ? "cursor-not-allowed opacity-50" : "hover:-translate-y-1.5 hover:brightness-125",
         active && "-translate-y-1.5 brightness-125",
       )}
-      style={{ left, backgroundColor: active ? "var(--color-select-options-icon)" : bg }}
+      style={{ left, width, backgroundColor: active ? "var(--color-select-options-icon)" : bg }}
     >
       <span className="flex skew-x-[10deg] flex-col items-center gap-[13px] pt-[11px]">
         <span className="h-6 w-6">{icon}</span>
@@ -92,6 +94,7 @@ export default function SelectFooter({
           bg="var(--color-select-mods)"
           line="var(--color-select-mods-line)"
           icon={<ArrowLeftRight className={cn("h-6 w-6", modsOpen ? "text-white" : "text-select-mods-icon")} aria-hidden />}
+          width={modsOpen && modCount > 0 ? 290 : 160}
           active={modsOpen || modCount > 0}
           onClick={onMods}
         />
@@ -99,7 +102,7 @@ export default function SelectFooter({
           <button
             type="button"
             onClick={() => useGameStore.getState().setSelectedMods([])}
-            className="absolute bottom-[10px] left-[590px] flex h-[62px] w-[270px] -skew-x-[10deg] cursor-pointer items-center justify-center rounded-lg bg-select-field font-game-display text-[19px] text-white/80 transition-[filter] duration-150 hover:brightness-125"
+            className={cn("absolute bottom-[10px] flex h-[62px] w-[270px] -skew-x-[10deg] cursor-pointer items-center justify-center rounded-lg bg-select-field font-game-display text-[19px] text-white/80 transition-[filter] duration-150 hover:brightness-125", modCount > 0 ? "left-[715px]" : "left-[590px]")}
           >
             <span className="skew-x-[10deg]">Deselect All</span>
           </button>
