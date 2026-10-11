@@ -15,6 +15,7 @@ import { useGameStore } from "@/lib/store/useGameStore";
 import { useMusicStore } from "@/lib/store/useMusicStore";
 import { useSettingsStore } from "@/lib/store/useSettingsStore";
 import { useCollectionStore } from "@/lib/store/useCollectionStore";
+import { modRate } from "@/lib/game/Mods";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import type { Beatmap } from "@/types/beatmap";
 
@@ -66,6 +67,21 @@ export default function SongSelectPage() {
   useEffect(() => {
     useCollectionStore.getState().load().catch(() => {});
   }, [token]);
+
+  // Preview follows the speed mod like lazer: DT/HT keep pitch, NC raises it. Back to normal when leaving select.
+  const previewRate = useGameStore((s) => modRate(s.selectedMods, s.customRate));
+  const nightcore = useGameStore((s) => s.selectedMods.includes("NC"));
+  useEffect(() => {
+    const audio = useMusicStore.getState().currentAudio;
+    if (!audio) return;
+    audio.preservesPitch = !nightcore;
+    // defaultPlaybackRate too: loading the next preview track resets playbackRate to it.
+    audio.playbackRate = audio.defaultPlaybackRate = previewRate;
+    return () => {
+      audio.playbackRate = audio.defaultPlaybackRate = 1;
+      audio.preservesPitch = true;
+    };
+  }, [previewRate, nightcore]);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [modsOpen, setModsOpen] = useState(false);
   const modCount = useGameStore((s) => s.selectedMods.length);
