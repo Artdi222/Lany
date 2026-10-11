@@ -1,7 +1,11 @@
 "use client";
+import { M_PLUS_Rounded_1c } from "next/font/google";
 import { motion } from "framer-motion";
 import { useGameStore } from "@/lib/store/useGameStore";
 import { useProgressStore } from "@/lib/store/useProgressStore";
+
+// Rounded bold title as in the pause photo (docs/ui-spec/pause.md); scoped to this component.
+const rounded = M_PLUS_Rounded_1c({ weight: "800", subsets: ["latin"] });
 
 interface PauseOverlayProps {
   onResume: () => void;
@@ -32,7 +36,7 @@ export default function PauseOverlay(props: PauseOverlayProps) {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex flex-col items-center bg-black/85 text-white"
     >
-      <h2 className="mt-[12vh] font-game-display text-6xl font-bold lowercase tracking-[0.25em] text-[#dddded]">
+      <h2 className={`mt-[12vh] ${rounded.className} text-6xl lowercase tracking-[0.25em] text-[#dddded]`}>
         paused
       </h2>
 
