@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, User, Pencil, Save, Camera, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/useAuthStore";
-import { updateProfile } from "@/lib/api/user";
-import { uploadToSupabase } from "@/lib/api/beatmaps";
+import { updateProfile, uploadProfileImage } from "@/lib/api/user";
 import { countryName } from "@/lib/country";
 import CountryPicker from "@/components/profile/CountryPicker";
 import ScoresSection from "@/components/profile/ScoresSection";
@@ -123,8 +122,8 @@ export default function ProfilePanel({ isOpen, onClose, userId }: ProfilePanelPr
     setIsSaving(true);
     try {
       const [avatarUrl, bannerUrl] = await Promise.all([
-        avatarFile ? shrinkImage(avatarFile, 512).then(uploadToSupabase).then(uploadedUrl) : user.avatarUrl,
-        bannerFile ? shrinkImage(bannerFile, 1600).then(uploadToSupabase).then(uploadedUrl) : user.bannerUrl,
+        avatarFile ? shrinkImage(avatarFile, 512).then((f) => uploadProfileImage(token, f)).then(uploadedUrl) : user.avatarUrl,
+        bannerFile ? shrinkImage(bannerFile, 1600).then((f) => uploadProfileImage(token, f)).then(uploadedUrl) : user.bannerUrl,
       ]);
 
       const updatedUser = await updateProfile(token, {

@@ -85,3 +85,17 @@ export interface UserBestScore {
 export function getUserBestScores(id: string) {
   return apiClient<UserBestScore[]>(`/users/${id}/scores`);
 }
+
+/** Upload an avatar/banner image (any signed-in user); returns the storage path. */
+export async function uploadProfileImage(token: string, file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"}/users/me/image`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || json.message || `Upload failed: ${res.statusText}`);
+  return json.data.filePath;
+}
