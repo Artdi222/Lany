@@ -17,8 +17,8 @@ export function armMenuAnalyser(audio: HTMLAudioElement) {
     try {
       const ctx = new AudioContext();
       const node = ctx.createAnalyser();
-      node.fftSize = 256;
-      node.smoothingTimeConstant = 0.75;
+      node.fftSize = 512;
+      node.smoothingTimeConstant = 0;
       ctx.createMediaElementSource(audio).connect(node);
       node.connect(ctx.destination);
       ctx.resume().catch(() => {});
