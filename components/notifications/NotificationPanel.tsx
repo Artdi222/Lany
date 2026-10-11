@@ -42,7 +42,20 @@ export default function NotificationPanel() {
                 <X className="h-6 w-6 text-red-400" />
               )}
             </span>
-            <p className="flex-1 self-center px-4 py-3 text-[15px] leading-snug text-lf-text">{n.text}</p>
+            {n.chatUser ? (
+              <button
+                type="button"
+                onClick={() => {
+                  dismiss(n.id);
+                  window.dispatchEvent(new CustomEvent("open-chat", { detail: n.chatUser }));
+                }}
+                className="flex-1 cursor-pointer self-stretch px-4 py-3 text-left text-[15px] leading-snug text-lf-text hover:bg-white/5"
+              >
+                {n.text}
+              </button>
+            ) : (
+              <p className="flex-1 self-center px-4 py-3 text-[15px] leading-snug text-lf-text">{n.text}</p>
+            )}
             <button
               type="button"
               onClick={() => dismiss(n.id)}

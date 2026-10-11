@@ -52,6 +52,7 @@ export default function GameNavbar() {
     };
     const handleOpenChat = (e: Event) => {
       setIsProfilePanelOpen(false);
+      setIsNotifOpen(false);
       setChatTarget((e as CustomEvent<ChatUser>).detail);
       setIsChatOpen(true);
     };

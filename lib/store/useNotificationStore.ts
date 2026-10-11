@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "./useAuthStore";
+import type { ChatUser } from "@/lib/api/chat";
 
 export interface AppNotification {
   /** "l<n>" = this tab only (toast mirrors), "s<n>" = stored on the server. */
@@ -9,12 +10,15 @@ export interface AppNotification {
   text: string;
   kind: "success" | "error";
   read: boolean;
+  /** Direct-message notification: clicking it opens the chat with this player. */
+  chatUser?: ChatUser | null;
 }
 
 interface ServerNotification {
   id: number;
   text: string;
   read: boolean;
+  chatUser: ChatUser | null;
 }
 
 interface NotificationState {
@@ -48,7 +52,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     const fresh = lastServerId === null ? [] : rows.filter((r) => r.id > lastServerId!);
     lastServerId = Math.max(lastServerId ?? 0, ...rows.map((r) => r.id));
     fresh.forEach((r) => toast(r.text));
-    const server: AppNotification[] = rows.map((r) => ({ id: `s${r.id}`, text: r.text, kind: "success", read: r.read }));
+    const server: AppNotification[] = rows.map((r) => ({ id: `s${r.id}`, text: r.text, kind: "success", read: r.read, chatUser: r.chatUser }));
     // ponytail: local items first, then server ones; no timestamp merge until ordering complaints show up.
     set({ items: [...get().items.filter((n) => !isServer(n)), ...server] });
   },
