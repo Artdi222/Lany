@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type {
   GameStatus,
   JudgementCounts,
@@ -81,7 +82,7 @@ function calculateRank(accuracy: number): RankGrade {
   return 'D';
 }
 
-export const useGameStore = create<GameState>()((set, get) => ({
+export const useGameStore = create<GameState>()(persist((set, get) => ({
   status: 'idle',
   score: 0,
   combo: 0,
@@ -252,6 +253,12 @@ export const useGameStore = create<GameState>()((set, get) => ({
       return { leaderboardCache: newCache };
     });
   },
+}), {
+  name: 'lanify-mods',
+  // Rehydrated after mount in app/(game)/layout.tsx, so server and first client render agree.
+  skipHydration: true,
+  // Only the mod choice survives a reload, like lazer keeping selected mods between sessions.
+  partialize: (s) => ({ selectedMods: s.selectedMods, customRate: s.customRate }),
 }));
 
 export { calculateRank };

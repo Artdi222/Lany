@@ -1,7 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { useGameStore } from "@/lib/store/useGameStore";
 import GameNavbar from "@/components/game/shared/Navbar";
 import { usePresence } from "@/components/dashboard/usePresence";
 import AmbientMotionController from "@/components/ui/AmbientMotionController";
@@ -15,6 +17,9 @@ export default function GameLayout({
   const pathname = usePathname();
   // Online presence for the dashboard; here (not in the navbar) so it keeps running while playing.
   usePresence();
+  useEffect(() => {
+    useGameStore.persist.rehydrate();
+  }, []);
   const isPlayPage = pathname.includes("/play/");
   const isResultPage = pathname.includes("/result");
   const hideNavbar = isPlayPage || isResultPage;
