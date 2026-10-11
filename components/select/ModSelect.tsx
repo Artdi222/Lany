@@ -5,6 +5,7 @@ import { ChevronDown, RotateCcw, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MODS, isUnranked, modRate, scoreMultiplier, speedRange, toggleMod, type ModCategory } from "@/lib/game/Mods";
 import GameSlider from "@/components/game/shared/GameSlider";
+import { difficultyColor, starTextColor } from "@/lib/select/difficultyColor";
 import { useGameStore } from "@/lib/store/useGameStore";
 import { getBeatmapPerformance, peekBeatmapPerformance } from "@/lib/api/scores";
 import type { Beatmap } from "@/types/beatmap";
@@ -229,7 +230,12 @@ export function ModStats({ beatmap }: { beatmap: Beatmap | null }) {
       <div className={box}>
         <div className="flex items-center gap-10 bg-select-tile px-7">
           <span className={cn(seg, "gap-10")}>
-            <span className="rounded-full bg-lf-danger px-3 py-0.5 text-[15px] font-bold text-select-bar">★ {stars != null ? stars.toFixed(2) : unranked ? "—" : "…"}</span>
+            <span
+              className={cn("rounded-full px-3 py-0.5 text-[15px] font-bold", stars == null && "bg-select-field text-white/70")}
+              style={stars != null ? { backgroundColor: difficultyColor(stars), color: starTextColor(stars) } : undefined}
+            >
+              ★ {stars != null ? stars.toFixed(2) : unranked ? "—" : "…"}
+            </span>
             <span className="text-[21px]">{Math.round(beatmap.bpm * rate)} BPM</span>
           </span>
         </div>
