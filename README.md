@@ -6,7 +6,7 @@
 
 <p align="center">A vertical scrolling rhythm game that runs in your browser. Play, sync, repeat.</p>
 
-![Lany main menu](public/background/Menu.png)
+![Lany main menu](public/background/Menu.webp)
 
 ## What is this
 
@@ -29,15 +29,15 @@ The layout borrows a lot from osu!lazer because it simply plays well, but the lo
 
 ## Tech stack
 
-| Area | What we use |
-| --- | --- |
-| Framework | Next.js 16 (App Router), React 19, TypeScript |
-| Rendering | PixiJS 7 for gameplay, Framer Motion for UI transitions |
-| Audio | Howler.js, with our own clock sync on top of the Web Audio output timestamp |
-| State | Zustand |
-| Styling | Tailwind CSS 4, a few shadcn/ui components, custom SVG icons |
-| Beatmaps | `.osz` and `.osu` parsed in the browser with JSZip |
-| Tests | `bun test` |
+| Area      | What we use                                                                 |
+| --------- | --------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router), React 19, TypeScript                               |
+| Rendering | PixiJS 7 for gameplay, Framer Motion for UI transitions                     |
+| Audio     | Howler.js, with our own clock sync on top of the Web Audio output timestamp |
+| State     | Zustand                                                                     |
+| Styling   | Tailwind CSS 4, a few shadcn/ui components, custom SVG icons                |
+| Beatmaps  | `.osz` and `.osu` parsed in the browser with JSZip                      |
+| Tests     | `bun test`                                                                |
 
 ## Running it locally
 
