@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import GameNavbar from "@/components/game/shared/Navbar";
+import { usePresence } from "@/components/dashboard/usePresence";
 import AmbientMotionController from "@/components/ui/AmbientMotionController";
 import FpsCounter from "@/components/ui/FpsCounter";
 
@@ -12,6 +13,8 @@ export default function GameLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // Online presence for the dashboard; here (not in the navbar) so it keeps running while playing.
+  usePresence();
   const isPlayPage = pathname.includes("/play/");
   const isResultPage = pathname.includes("/result");
   const hideNavbar = isPlayPage || isResultPage;

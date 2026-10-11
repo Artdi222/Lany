@@ -9,6 +9,7 @@ import { countryName } from "@/lib/country";
 import CountryPicker from "@/components/profile/CountryPicker";
 import ScoresSection from "@/components/profile/ScoresSection";
 import Flag from "@/components/profile/Flag";
+import FriendButton from "@/components/dashboard/FriendButton";
 import { invalidateUserProfile, useUserProfile } from "@/components/profile/useUserProfile";
 import { toast } from "sonner";
 
@@ -212,6 +213,7 @@ export default function ProfilePanel({ isOpen, onClose, userId }: ProfilePanelPr
                     {isEditing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
                   </button>
                 )}
+                {!isOwn && viewedId && <FriendButton userId={viewedId} />}
               </div>
 
               {isEditing && isOwn && (
