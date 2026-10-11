@@ -52,7 +52,8 @@ export class GameEngine {
     this.notes = config.notes;
     this.callbacks = config.callbacks;
     this.judgementEngine = new JudgementEngine(config.od, windowScale(mods) * rate);
-    this.audioEngine = new AudioEngine(config.globalOffset, rate);
+    // HT/DT keep the pitch (like osu!), NC shifts it.
+    this.audioEngine = new AudioEngine(config.globalOffset, rate, !mods.includes("NC"));
     this.noteRenderer = new NoteRenderer(
       config.app,
       config.keyCount,
@@ -60,6 +61,7 @@ export class GameEngine {
       config.scrollSpeed,
       config.percyMaxLengthPx,
       mods.includes("HD"),
+      rate,
     );
     this.inputHandler = new InputHandler(
       config.keybinds,
@@ -106,7 +108,7 @@ export class GameEngine {
     const isDown = this.noteRenderer.getScrollDirection() === "down";
     const screenH = this.app?.screen?.height || 800;
     const spawnDistance = isDown ? hitZoneY + 100 : screenH - hitZoneY + 100;
-    const pxPerMs = this.noteRenderer.getScrollSpeed() * 0.08;
+    const pxPerMs = this.noteRenderer.getPxPerMs();
     const travelTime = spawnDistance / pxPerMs;
 
     if (firstNoteTime < travelTime) {

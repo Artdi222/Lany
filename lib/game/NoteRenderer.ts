@@ -79,6 +79,8 @@ export class NoteRenderer {
   // Percy skin: maximum visual LN body length in pixels (Infinity = no cap)
   private percyMaxLengthPx: number;
   private hiddenTexture: PIXI.Texture | null = null;
+  /** Playback rate (HT/DT/NC). Scroll speed stays constant on screen like lazer mania, so px per song-ms is divided by it. */
+  private rate: number;
 
   constructor(
     app: PIXI.Application,
@@ -87,7 +89,9 @@ export class NoteRenderer {
     scrollSpeed: number,
     percyMaxLengthPx: number = 99999,
     hidden: boolean = false,
+    rate: number = 1,
   ) {
+    this.rate = rate;
     this.app = app;
     this.keyCount = keyCount;
     this.flashes = new ColumnFlashes(keyCount);
@@ -363,7 +367,7 @@ export class NoteRenderer {
 
     this.holdEndTimes.clear();
 
-    const pxPerMs = this.scrollSpeed * 0.08;
+    const pxPerMs = this.getPxPerMs();
     const isDown = this.scrollDirection === "down";
     const screenH = this.app.screen.height;
     // Look-ahead must cover the full travel distance: from spawn edge to hit zone.
@@ -590,6 +594,11 @@ export class NoteRenderer {
       cover.height = this.hitZoneY + screenH * 0.46;
     }
     this.laneContainer.addChild(cover);
+  }
+
+  /** Pixels per ms of song time. */
+  getPxPerMs(): number {
+    return (this.scrollSpeed * 0.08) / this.rate;
   }
 
   destroy(): void {

@@ -26,10 +26,16 @@ export class AudioEngine {
   private audioStarted: boolean = false;
   /** Playback rate (HT/DT/NC). Song time advances `rate` ms per real ms. */
   private rate: number;
+  /**
+   * HT/DT: HTML5 audio, whose playbackRate keeps the pitch (`preservesPitch` is on by default).
+   * Web Audio (everything else, NC included) has the precise output clock but its rate also shifts pitch.
+   */
+  private html5: boolean;
 
-  constructor(globalOffset: number = 0, rate: number = 1) {
+  constructor(globalOffset: number = 0, rate: number = 1, preservePitch: boolean = false) {
     this.globalOffset = globalOffset;
     this.rate = rate;
+    this.html5 = rate !== 1 && preservePitch;
   }
 
   async load(url: string, volume: number = 0.8): Promise<void> {
@@ -50,8 +56,7 @@ export class AudioEngine {
         src: [url],
         format: ["mp3", "ogg", "wav"],
         volume,
-        html5: false,
-        // ponytail: Web Audio rate also shifts pitch, so DT sounds like NC; pitch-preserving DT needs a time-stretch worklet.
+        html5: this.html5,
         rate: this.rate,
         onload: () => {
           this.currentUrl = url;
@@ -104,13 +109,23 @@ export class AudioEngine {
   /**
    * Re-anchor game time to the audible audio position. Call once per frame while playing
    * (throttled internally). Kept out of getCurrentTime() so the input path stays side-effect free.
-   * No-op without Web Audio, so HTML5-audio fallbacks keep the raw performance.now() clock.
+   * HTML5 audio (HT/DT) samples media currentTime instead of the Web Audio output timestamp.
    * Elapsed real time is scaled by `rate` everywhere the anchor is used (HT/DT/NC).
    */
   syncClock(): void {
     if (!this.howl || !this.playing || !this.audioStarted || this.soundId === null) return;
     const now = performance.now();
     if (now - this.lastClockSampleAt < CLOCK_SAMPLE_INTERVAL_MS) return;
+
+    if (this.html5) {
+      // ponytail: no output timestamp for media elements; currentTime + the median filter still removes drift. Output latency is left to the user's audio offset.
+      if (!this.howl.playing(this.soundId)) return;
+      const seek = this.howl.seek(this.soundId);
+      if (typeof seek !== "number" || seek <= 0) return;
+      this.lastClockSampleAt = now;
+      this.startTimestamp = this.clockFilter.push(anchorFromLatency(seek * 1000, now, 0, this.rate));
+      return;
+    }
 
     const ctx = Howler.usingWebAudio ? Howler.ctx : undefined;
     // After the song ends or while Howler waits for the context, seek() is meaningless: don't sample.
