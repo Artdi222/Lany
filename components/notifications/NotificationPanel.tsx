@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
+import { motion } from "framer-motion";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
 
 /** Right-hand panel under the top bar (spec: docs/ui-spec/notifications.md). */
@@ -10,7 +11,13 @@ export default function NotificationPanel() {
   const clear = useNotificationStore((s) => s.clear);
 
   return (
-    <div className="fixed right-0 top-12 bottom-0 z-50 w-[min(450px,100vw)] overflow-y-auto bg-lf-bg-raised px-7 py-4 shadow-lf-panel">
+    <motion.div
+      initial={{ x: "100%" }}
+      animate={{ x: 0 }}
+      exit={{ x: "100%" }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed right-0 top-12 bottom-0 z-50 w-[min(450px,100vw)] overflow-y-auto bg-lf-bg-raised px-7 py-4 shadow-lf-panel"
+    >
       <div className="flex items-center justify-between">
         <h2 className="font-game-display text-[17px] font-bold uppercase text-lf-text">
           Notifications <span className="ml-1.5 text-yellow-400">{items.length}</span>
@@ -47,6 +54,6 @@ export default function NotificationPanel() {
           </li>
         ))}
       </ul>
-    </div>
+    </motion.div>
   );
 }

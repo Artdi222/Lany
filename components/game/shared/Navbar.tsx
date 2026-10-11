@@ -201,7 +201,7 @@ export default function GameNavbar() {
               </span>
             )}
           </button>
-          {isNotifOpen && <NotificationPanel />}
+          <AnimatePresence>{isNotifOpen && <NotificationPanel />}</AnimatePresence>
         </div>
       </nav>
 
