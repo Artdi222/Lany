@@ -78,6 +78,7 @@ export class NoteRenderer {
 
   // Percy skin: maximum visual LN body length in pixels (Infinity = no cap)
   private percyMaxLengthPx: number;
+  private hiddenTexture: PIXI.Texture | null = null;
 
   constructor(
     app: PIXI.Application,
@@ -85,6 +86,7 @@ export class NoteRenderer {
     scrollDirection: ScrollDirection,
     scrollSpeed: number,
     percyMaxLengthPx: number = 99999,
+    hidden: boolean = false,
   ) {
     this.app = app;
     this.keyCount = keyCount;
@@ -143,6 +145,7 @@ export class NoteRenderer {
       this.hitZone.lineStyle(8, HIT_ZONE_COLOR, 0.15);
       this.hitZone.drawCircle(centerX, this.hitZoneY, this.radius);
     }
+    if (hidden) this.addHiddenCover(app.screen.height);
     this.laneContainer.addChild(this.hitZone);
 
     // Column flashes (drawn once, alpha-animated)
@@ -554,8 +557,44 @@ export class NoteRenderer {
     return { x: this.laneX, width: this.laneWidth };
   }
 
+  /**
+   * HD: a lane-wide band over the notes, opaque near the hit zone and fading out toward the spawn
+   * side, so keys vanish before they are hit. Drawn under the hit zone so receptors stay visible.
+   */
+  private addHiddenCover(screenH: number): void {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d")!;
+    const g = ctx.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(0.35, "rgba(0,0,0,1)");
+    g.addColorStop(1, "rgba(0,0,0,1)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 1, 256);
+    this.hiddenTexture = PIXI.Texture.from(canvas);
+
+    // ponytail: fixed coverage (fade over ~20% of the screen, then fully hidden for the last ~25% before the hit line); add a coverage setting if players ask.
+    const cover = new PIXI.Sprite(this.hiddenTexture);
+    const fadeStart = this.hitZoneY - screenH * 0.46; // distance from the hit line where fading begins (down scroll)
+    cover.x = this.laneX;
+    cover.width = this.laneWidth;
+    if (this.scrollDirection === "down") {
+      cover.y = fadeStart;
+      cover.height = screenH - fadeStart;
+    } else {
+      // Flip vertically: the band grows upward from the bottom of the screen to the hit line.
+      cover.anchor.y = 1;
+      cover.scale.y = -1;
+      cover.y = 0;
+      cover.height = this.hitZoneY + screenH * 0.46;
+    }
+    this.laneContainer.addChild(cover);
+  }
+
   destroy(): void {
     this.laneContainer.destroy({ children: true });
+    this.hiddenTexture?.destroy(true);
     // texture + baseTexture: the background image is owned by this renderer, free it with the sprite
     this.backgroundContainer.destroy({ children: true, texture: true, baseTexture: true });
     this.noteTexture?.destroy(true);

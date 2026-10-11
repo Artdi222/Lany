@@ -30,13 +30,14 @@ export interface OutputSample {
  * is `gotPerf` on the performance clock. Staleness of `ctxNow` cancels because `seek` and
  * `ctxNow` are read together.
  */
-export function anchorFromOutputTimestamp(s: OutputSample): number {
-  return s.gotPerfMs - s.seekMs + (s.ctxNowMs - s.gotCtxMs);
+export function anchorFromOutputTimestamp(s: OutputSample, rate = 1): number {
+  // At `rate`, song time advances `rate` ms per real ms, so the song position converts back by `/ rate`.
+  return s.gotPerfMs - s.seekMs / rate + (s.ctxNowMs - s.gotCtxMs);
 }
 
 /** Fallback when `getOutputTimestamp` is unavailable: subtract the reported output latency. */
-export function anchorFromLatency(seekMs: number, perfNowMs: number, latencyMs: number): number {
-  return perfNowMs - (seekMs - latencyMs);
+export function anchorFromLatency(seekMs: number, perfNowMs: number, latencyMs: number, rate = 1): number {
+  return perfNowMs - seekMs / rate + latencyMs;
 }
 
 /**

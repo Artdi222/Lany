@@ -143,6 +143,14 @@ describe("applyJudgement", () => {
     expect(s.judgements.miss).toBe(40);
   });
 
+  test("mods scale HP loss (not gain) and the score", () => {
+    const units = maxScoreUnits([note(false), note(false)]);
+    const hit = applyJudgement({ ...fresh(), hp: 50 }, "MARVELOUS", 1, 1, units, 0.5, 0.5);
+    expect(hit.hp).toBe(52);
+    expect(hit.score).toBe(250000);
+    expect(applyJudgement({ ...fresh(), hp: 50 }, "MISS", 1, 1, units, 0.5).hp).toBe(46);
+  });
+
   test("does not mutate its input", () => {
     const before = fresh();
     const snapshot = JSON.parse(JSON.stringify(before));

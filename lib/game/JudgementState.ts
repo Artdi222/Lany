@@ -56,12 +56,16 @@ export function applyJudgement(
   weight: number,
   count: number,
   maxUnits: number,
+  /** Mods: HP loss scale (EZ 0.5) and score multiplier (EZ/NF/HT 0.5 each). */
+  hpLossScale = 1,
+  scoreMultiplier = 1,
 ): JudgementSlice {
   const key = type.toLowerCase() as keyof JudgementCounts;
   const judgements = { ...state.judgements, [key]: state.judgements[key] + count };
 
   const combo = type === "MISS" ? 0 : state.combo + count;
-  const hp = Math.max(0, Math.min(100, state.hp + hpDelta(type) * weight * count));
+  const delta = hpDelta(type);
+  const hp = Math.max(0, Math.min(100, state.hp + (delta < 0 ? delta * hpLossScale : delta) * weight * count));
 
   const scoreSum =
     judgements.marvelous * 320 +
@@ -76,6 +80,6 @@ export function applyJudgement(
     maxCombo: Math.max(state.maxCombo, combo),
     accuracy: calculateAccuracy(judgements),
     hp,
-    score: Math.floor((scoreSum / maxUnits) * 1000000),
+    score: Math.floor((scoreSum / maxUnits) * 1000000 * scoreMultiplier),
   };
 }

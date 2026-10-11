@@ -11,6 +11,7 @@ import type {
 } from '@/types/game';
 import type { Beatmap } from '@/types/beatmap';
 import { applyJudgement, maxScoreUnits as computeMaxScoreUnits } from '@/lib/game/JudgementState';
+import { hpLossScale, scoreMultiplier, type ModAcronym } from '@/lib/game/Mods';
 
 interface GameState {
   status: GameStatus;
@@ -33,11 +34,14 @@ interface GameState {
   retryTrigger: number;
   /** Score denominator for the current chart, computed once in startGame (not per hit). */
   maxScoreUnits: number;
+  /** Mods picked in song select; used by the next play, its score submit and result screen. */
+  selectedMods: ModAcronym[];
 
   leaderboardCache: Record<string, { entries: LeaderboardEntry[]; timestamp: number }>;
 
   // Actions
   setBeatmaps: (beatmaps: Beatmap[]) => void;
+  setSelectedMods: (mods: ModAcronym[]) => void;
   setSelectedBeatmap: (beatmap: Beatmap | null) => void;
   startGame: (beatmap: ParsedBeatmap) => void;
   pauseGame: () => void;
@@ -93,8 +97,10 @@ export const useGameStore = create<GameState>()((set, get) => ({
   viewingMeta: null,
   retryTrigger: 0,
   maxScoreUnits: 0,
+  selectedMods: [],
 
   setBeatmaps: (beatmaps) => set({ beatmaps }),
+  setSelectedMods: (selectedMods) => set({ selectedMods }),
   setSelectedBeatmap: (selectedBeatmap) => set({ selectedBeatmap, selectedBeatmapId: selectedBeatmap?.id || null }),
 
   startGame: (beatmap) =>
@@ -125,7 +131,8 @@ export const useGameStore = create<GameState>()((set, get) => ({
   updateJudgement: (type, errorMs, time, weight = 1, count = 1) => {
     const state = get();
     const maxUnits = state.maxScoreUnits || computeMaxScoreUnits(state.currentBeatmap?.notes);
-    const next = applyJudgement(state, type, weight, count, maxUnits);
+    const mods = state.selectedMods;
+    const next = applyJudgement(state, type, weight, count, maxUnits, hpLossScale(mods), scoreMultiplier(mods));
 
     // History is append-only and only read after the run (result page, score submit), so it is
     // pushed in place instead of copying the whole array on every hit. A fresh array is created by

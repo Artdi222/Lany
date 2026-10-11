@@ -36,13 +36,13 @@ export class InputHandler {
   constructor(
     keybinds: string[],
     notes: ParsedNote[],
-    od: number,
+    judgementEngine: JudgementEngine,
     getTimeAt: (perfMs: number) => number,
     onJudgement: JudgementCallback,
     onColumnFlash: ColumnFlashCallback,
   ) {
     this.notes = notes;
-    this.judgementEngine = new JudgementEngine(od);
+    this.judgementEngine = judgementEngine;
     this.missWindow = this.judgementEngine.getMissWindow();
     this.onJudgement = onJudgement;
     this.onColumnFlash = onColumnFlash;

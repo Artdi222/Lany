@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronLeft, Settings, Shuffle, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGameStore } from "@/lib/store/useGameStore";
 
 /** Footer layar select: ukuran dan warna dari foto (docs/ui-spec/song-select.md, bagian Footer). */
 
@@ -61,15 +62,24 @@ function Tile({ label, icon, bg, line, left, active, disabled, title, onClick }:
 export default function SelectFooter({
   onRandom,
   onOptions,
+  onMods,
   onPlay,
   optionsOpen,
+  modsOpen,
+  modCount,
   canPlay,
+  modStats,
 }: {
   onRandom: () => void;
   onOptions: () => void;
+  onMods: () => void;
   onPlay: () => void;
   optionsOpen: boolean;
+  modsOpen: boolean;
+  modCount: number;
   canPlay: boolean;
+  /** Shown instead of Random/Options/Play while Mod Select is open (foto Mods). */
+  modStats: React.ReactNode;
 }) {
   return (
     <>
@@ -81,10 +91,20 @@ export default function SelectFooter({
           left={405}
           bg="var(--color-select-mods)"
           line="var(--color-select-mods-line)"
-          icon={<ArrowLeftRight className="h-6 w-6 text-select-mods-icon" aria-hidden />}
-          disabled
-          title="Mods coming soon"
+          icon={<ArrowLeftRight className={cn("h-6 w-6", modsOpen ? "text-white" : "text-select-mods-icon")} aria-hidden />}
+          active={modsOpen || modCount > 0}
+          onClick={onMods}
         />
+        {modsOpen ? (
+          <button
+            type="button"
+            onClick={() => useGameStore.getState().setSelectedMods([])}
+            className="absolute bottom-[10px] left-[590px] flex h-[62px] w-[270px] -skew-x-[10deg] cursor-pointer items-center justify-center rounded-lg bg-select-field font-game-display text-[19px] text-white/80 transition-[filter] duration-150 hover:brightness-125"
+          >
+            <span className="skew-x-[10deg]">Deselect All</span>
+          </button>
+        ) : (
+        <>
         <Tile
           label="Random"
           left={568}
@@ -102,7 +122,10 @@ export default function SelectFooter({
           active={optionsOpen}
           onClick={onOptions}
         />
+        </>
+        )}
       </div>
+      {modsOpen && modStats}
 
       {/* Logo = tombol Play, terpotong di pojok kanan-bawah seperti lazer */}
       <button
@@ -110,6 +133,7 @@ export default function SelectFooter({
         aria-label="Play"
         disabled={!canPlay}
         onClick={onPlay}
+        hidden={modsOpen}
         className="group absolute -bottom-[150px] -right-[110px] z-30 h-[330px] w-[330px] cursor-pointer focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="absolute inset-0 rounded-full border-[6px] border-white bg-linear-to-br from-lf-primary-hover to-lf-primary shadow-lf-glow transition-transform duration-200 ease-lf-out group-hover:scale-105 group-active:scale-95" />

@@ -4,6 +4,7 @@ import { NoteRenderer } from "./NoteRenderer";
 import { InputHandler } from "./InputHandler";
 import { JudgementEngine } from "./JudgementEngine";
 import type { ParsedNote, ScrollDirection, JudgementType } from "@/types/game";
+import { modRate, windowScale, type ModAcronym } from "./Mods";
 
 interface GameEngineCallbacks {
   onJudgement: (
@@ -40,27 +41,32 @@ export class GameEngine {
     percyMaxLengthPx?: number;
     volume: number;
     globalOffset: number;
+    mods?: readonly ModAcronym[];
     callbacks: GameEngineCallbacks;
   }) {
+    const mods = config.mods ?? [];
+    const rate = modRate(mods);
     this.app = config.app;
     this.notes = config.notes;
     this.callbacks = config.callbacks;
-    this.judgementEngine = new JudgementEngine(config.od);
-    this.audioEngine = new AudioEngine(config.globalOffset);
+    this.judgementEngine = new JudgementEngine(config.od, windowScale(mods) * rate);
+    this.audioEngine = new AudioEngine(config.globalOffset, rate);
     this.noteRenderer = new NoteRenderer(
       config.app,
       config.keyCount,
       config.scrollDirection,
       config.scrollSpeed,
       config.percyMaxLengthPx,
+      mods.includes("HD"),
     );
     this.inputHandler = new InputHandler(
       config.keybinds,
       config.notes,
-      config.od,
+      this.judgementEngine,
       (perfMs) => this.audioEngine.getTimeAt(perfMs),
+      // Errors are measured in song time; report them in real ms so the hit-error graph matches what the player felt.
       (type, errorMs, time, weight, count) =>
-        this.callbacks.onJudgement(type, errorMs, time, weight, count),
+        this.callbacks.onJudgement(type, errorMs / rate, time, weight, count),
       (column) => this.noteRenderer.flashColumn(column),
     );
   }

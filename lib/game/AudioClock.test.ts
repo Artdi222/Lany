@@ -154,3 +154,11 @@ describe("resolveEventTime", () => {
     expect(resolveEventTime(now - 400, now, 500)).toBe(now - 400);
   });
 });
+
+test("anchors scale the song position by the playback rate", () => {
+  // At 1.5x, song position 1500 ms is reached 1000 real ms after the anchor.
+  const s = { seekMs: 1500, ctxNowMs: 500, gotCtxMs: 500, gotPerfMs: 11000, perfNowMs: 11000 };
+  expect(anchorFromOutputTimestamp(s, 1.5)).toBe(10000);
+  expect(anchorFromLatency(1500, 11000, 0, 1.5)).toBe(10000);
+  expect(anchorFromLatency(750, 11000, 40, 0.75)).toBe(10040);
+});

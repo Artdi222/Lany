@@ -87,7 +87,8 @@ export default function ResultPage() {
 
   const rank = calculateRank(accuracy);
   const zoom = useCardZoom();
-  const mods = isReadOnly ? modAcronyms(viewingMeta?.mods) : "";
+  const selectedMods = useGameStore((s) => s.selectedMods);
+  const mods = isReadOnly ? modAcronyms(viewingMeta?.mods) : selectedMods.join("");
   const totalJudgements = Object.values(judgements).reduce((a, b) => a + b, 0);
   const beatmapId = currentBeatmap?.id ?? selectedBeatmapId;
 
@@ -111,6 +112,7 @@ export default function ResultPage() {
         ...judgementsToPayload(judgements),
         accuracyHistory: JSON.stringify(accuracyHistory),
         hitErrors: JSON.stringify(hitErrors),
+        ...(selectedMods.length ? { mods: JSON.stringify(selectedMods) } : {}),
       };
       submitScore(payload, token)
         .then((res) => {
@@ -121,7 +123,7 @@ export default function ResultPage() {
         })
         .catch(() => toast.error("Failed to save score"));
     }
-  }, [token, selectedBeatmapId, score, accuracy, maxCombo, judgements, accuracyHistory, hitErrors, isReadOnly, totalJudgements]);
+  }, [token, selectedBeatmapId, score, accuracy, maxCombo, judgements, accuracyHistory, hitErrors, isReadOnly, totalJudgements, selectedMods]);
 
   // Leaderboard strip; refetched once the fresh score is saved so it lands in its real position.
   useEffect(() => {

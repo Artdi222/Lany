@@ -16,16 +16,17 @@ interface HitWindows {
 export class JudgementEngine {
   private hitWindows: HitWindows;
 
-  constructor(od: number) {
+  /** `scale` widens/narrows every window: EZ (x1.4) and the playback rate, so windows stay the same in real time. */
+  constructor(od: number, scale: number = 1) {
     // osu!mania hit windows (in ms) based on OD
     // Source: osu! wiki
     // i adjust to make it easier lol
     this.hitWindows = {
-      marvelous: 22,
-      perfect: 74 - 3 * od,
-      great: 108 - 3 * od,
-      good: 138 - 3 * od,
-      bad: 162 - 3 * od,
+      marvelous: 22 * scale,
+      perfect: (74 - 3 * od) * scale,
+      great: (108 - 3 * od) * scale,
+      good: (138 - 3 * od) * scale,
+      bad: (162 - 3 * od) * scale,
     };
   }
 

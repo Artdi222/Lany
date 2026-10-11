@@ -24,15 +24,19 @@ export class AudioEngine {
   private currentUrl: string | null = null;
   private leadInMs: number = 0;
   private audioStarted: boolean = false;
+  /** Playback rate (HT/DT/NC). Song time advances `rate` ms per real ms. */
+  private rate: number;
 
-  constructor(globalOffset: number = 0) {
+  constructor(globalOffset: number = 0, rate: number = 1) {
     this.globalOffset = globalOffset;
+    this.rate = rate;
   }
 
   async load(url: string, volume: number = 0.8): Promise<void> {
     if (this.howl && this.currentUrl === url) {
       this.howl.stop();
       this.howl.seek(0);
+      this.howl.rate(this.rate);
       return Promise.resolve();
     }
 
@@ -47,6 +51,8 @@ export class AudioEngine {
         format: ["mp3", "ogg", "wav"],
         volume,
         html5: false,
+        // ponytail: Web Audio rate also shifts pitch, so DT sounds like NC; pitch-preserving DT needs a time-stretch worklet.
+        rate: this.rate,
         onload: () => {
           this.currentUrl = url;
           resolve();
@@ -99,8 +105,7 @@ export class AudioEngine {
    * Re-anchor game time to the audible audio position. Call once per frame while playing
    * (throttled internally). Kept out of getCurrentTime() so the input path stays side-effect free.
    * No-op without Web Audio, so HTML5-audio fallbacks keep the raw performance.now() clock.
-   * Assumes playback rate 1: HT/DT/NC (Plan.md section 1) will need the output-timestamp
-   * term and getCurrentTime() scaled by the rate.
+   * Elapsed real time is scaled by `rate` everywhere the anchor is used (HT/DT/NC).
    */
   syncClock(): void {
     if (!this.howl || !this.playing || !this.audioStarted || this.soundId === null) return;
@@ -127,8 +132,8 @@ export class AudioEngine {
             gotCtxMs: ts.contextTime * 1000,
             gotPerfMs: ts.performanceTime,
             perfNowMs: now,
-          })
-        : anchorFromLatency(seekMs, now, (ctx.outputLatency || ctx.baseLatency || 0) * 1000);
+          }, this.rate)
+        : anchorFromLatency(seekMs, now, (ctx.outputLatency || ctx.baseLatency || 0) * 1000, this.rate);
 
     this.startTimestamp = this.clockFilter.push(sample);
   }
@@ -146,9 +151,9 @@ export class AudioEngine {
     if (!this.howl) return;
     const current = this.audioStarted ? this.getCurrentTime() : this.pauseTime;
     if (!this.audioStarted) {
-      this.startTimestamp = performance.now() - (current + this.leadInMs);
+      this.startTimestamp = performance.now() - (current + this.leadInMs) / this.rate;
     } else {
-      this.startTimestamp = performance.now() - current;
+      this.startTimestamp = performance.now() - current / this.rate;
       if (this.soundId !== null) {
         this.howl.play(this.soundId);
       }
@@ -167,12 +172,12 @@ export class AudioEngine {
     if (!this.playing) return this.pauseTime;
 
     if (!this.audioStarted) {
-      const elapsed = performance.now() - this.startTimestamp;
+      const elapsed = (performance.now() - this.startTimestamp) * this.rate;
       const current = -this.leadInMs + elapsed;
       if (current >= 0) {
         this.audioStarted = true;
         this.soundId = this.howl.play();
-        this.resyncClock(performance.now() - current);
+        this.resyncClock(performance.now() - current / this.rate);
         return current + this.globalOffset;
       }
       return current + this.globalOffset;
@@ -189,8 +194,8 @@ export class AudioEngine {
   getTimeAt(perfMs: number): number {
     if (!this.howl) return 0;
     if (!this.playing) return this.pauseTime;
-    if (!this.audioStarted) return -this.leadInMs + (perfMs - this.startTimestamp) + this.globalOffset;
-    return perfMs - this.startTimestamp + this.globalOffset;
+    if (!this.audioStarted) return -this.leadInMs + (perfMs - this.startTimestamp) * this.rate + this.globalOffset;
+    return (perfMs - this.startTimestamp) * this.rate + this.globalOffset;
   }
 
   seek(timeMs: number): void {
@@ -221,7 +226,7 @@ export class AudioEngine {
     }
 
     if (this.playing) {
-      this.resyncClock(performance.now() - timeMs);
+      this.resyncClock(performance.now() - timeMs / this.rate);
     } else {
       this.pauseTime = timeMs;
     }

@@ -150,8 +150,9 @@ export default function GameCanvas({ beatmapId, onReady, onProgress }: GameCanva
 
   const handleJudgement = useCallback((type: JudgementType, errorMs: number, time: number, weight?: number, count?: number) => {
     updateJudgement(type, errorMs, time, weight, count);
-    const hp = useGameStore.getState().hp;
-    if (hp <= 0) { failGame(); engineRef.current?.pause(); }
+    const { hp, selectedMods } = useGameStore.getState();
+    if (selectedMods.includes("NF")) return;
+    if (hp <= 0 || (type === "MISS" && selectedMods.includes("SD"))) { failGame(); engineRef.current?.pause(); }
   }, [updateJudgement, failGame]);
 
   const handleComplete = useCallback(() => { endGame(); }, [endGame]);
@@ -230,6 +231,7 @@ export default function GameCanvas({ beatmapId, onReady, onProgress }: GameCanva
           percyMaxLengthPx: settings.percyMaxLengthPx,
           volume: settings.volume,
           globalOffset: settings.globalOffset,
+          mods: useGameStore.getState().selectedMods,
           callbacks: { onJudgement: handleJudgement, onComplete: handleComplete, onFail: handleFail },
         });
 

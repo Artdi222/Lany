@@ -9,6 +9,7 @@ import BeatmapDetail from "@/components/game/select/BeatmapDetail";
 import SelectBackground from "@/components/select/SelectBackground";
 import SelectFooter from "@/components/select/SelectFooter";
 import OptionsMenu from "@/components/select/OptionsMenu";
+import ModSelect, { ModStats } from "@/components/select/ModSelect";
 import { listBeatmaps } from "@/lib/api/beatmaps";
 import { useGameStore } from "@/lib/store/useGameStore";
 import { useMusicStore } from "@/lib/store/useMusicStore";
@@ -59,6 +60,9 @@ export default function SongSelectPage() {
 
   const [search, setSearch] = useState("");
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [modsOpen, setModsOpen] = useState(false);
+  const modCount = useGameStore((s) => s.selectedMods.length);
+  const closeMods = useCallback(() => setModsOpen(false), []);
   
   const { 
     selectionSortBy: sortBy, 
@@ -398,9 +402,15 @@ export default function SongSelectPage() {
         />
       )}
 
+      {modsOpen && <ModSelect onClose={closeMods} />}
+
       <SelectFooter
         onRandom={handleRandomBeatmap}
         onOptions={() => setOptionsOpen((v) => !v)}
+        onMods={() => { setOptionsOpen(false); setModsOpen((v) => !v); }}
+        modsOpen={modsOpen}
+        modCount={modCount}
+        modStats={<ModStats beatmap={selectedBeatmap} />}
         onPlay={() => selectedBeatmap && router.push(`/prepare/${selectedBeatmap.id}`)}
         optionsOpen={optionsOpen}
         canPlay={!!selectedBeatmap}
