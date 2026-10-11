@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Pencil, Save, Camera, Loader2 } from "lucide-react";
+import { X, User, Pencil, Save, Camera, Loader2, MessageSquare } from "lucide-react";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { updateProfile, uploadProfileImage } from "@/lib/api/user";
 import { countryName } from "@/lib/country";
@@ -69,7 +69,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /** "player info" sheet. Spec: docs/ui-spec/profile.md. */
 export default function ProfilePanel({ isOpen, onClose, userId }: ProfilePanelProps) {
-  const { user, token, login } = useAuthStore();
+  const { user, token, login, isGuest } = useAuthStore();
   const viewedId = userId ?? user?.id;
   const isOwn = !!user && viewedId === user.id;
   const profile = useUserProfile(viewedId, isOpen);
@@ -215,6 +215,20 @@ export default function ProfilePanel({ isOpen, onClose, userId }: ProfilePanelPr
                   </button>
                 )}
                 {!isOwn && viewedId && <FriendButton userId={viewedId} />}
+                {!isOwn && viewedId && !isGuest && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent("open-chat", { detail: { id: viewedId, username: shown.username, avatarUrl: shown.avatarUrl ?? null } }),
+                      )
+                    }
+                    className="ml-2 flex shrink-0 cursor-pointer items-center gap-2 rounded-lf-md bg-white/10 px-3 py-1.5 font-game-body text-sm text-white transition-colors hover:bg-white/20"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Message
+                  </button>
+                )}
               </div>
 
               {isEditing && isOwn && (

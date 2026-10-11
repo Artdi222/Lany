@@ -16,6 +16,8 @@ import RankingsOverlay from "@/components/rankings/RankingsOverlay";
 import DashboardOverlay from "@/components/dashboard/DashboardOverlay";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationPanel from "@/components/notifications/NotificationPanel";
+import ChatOverlay from "@/components/chat/ChatOverlay";
+import type { ChatUser } from "@/lib/api/chat";
 import { useNotificationStore } from "@/lib/store/useNotificationStore";
 
 export default function GameNavbar() {
@@ -30,6 +32,9 @@ export default function GameNavbar() {
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [profileUserId, setProfileUserId] = useState<string | undefined>();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  // Chat overlay; `chatTarget` = player picked via a profile's Message button.
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatTarget, setChatTarget] = useState<ChatUser | null>(null);
   const unread = useNotificationStore((s) => s.items.filter((n) => !n.read).length);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
 
@@ -45,14 +50,26 @@ export default function GameNavbar() {
     const handleOpenAuth = () => {
       setIsDropdownOpen(true);
     };
+    const handleOpenChat = (e: Event) => {
+      setIsProfilePanelOpen(false);
+      setChatTarget((e as CustomEvent<ChatUser>).detail);
+      setIsChatOpen(true);
+    };
     window.addEventListener("open-auth-dropdown", handleOpenAuth);
-    return () => window.removeEventListener("open-auth-dropdown", handleOpenAuth);
+    window.addEventListener("open-chat", handleOpenChat);
+    return () => {
+      window.removeEventListener("open-auth-dropdown", handleOpenAuth);
+      window.removeEventListener("open-chat", handleOpenChat);
+    };
   }, []);
 
   // F9 toggles the dashboard (as in osu!).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsNotifOpen(false);
+      if (e.key === "Escape") {
+        setIsNotifOpen(false);
+        setIsChatOpen(false);
+      }
       if (e.key !== "F9") return;
       e.preventDefault();
       setIsRankingsOpen(false);
@@ -112,7 +129,18 @@ export default function GameNavbar() {
           >
             <Icon name="rankings" size={22} />
           </button>
-          <button disabled title="Segera" aria-label="Chat" className="flex w-12 items-center justify-center text-lf-text-dim">
+          <button
+            type="button"
+            disabled={isGuest}
+            onClick={() => {
+              setChatTarget(null);
+              setIsChatOpen((o) => !o);
+            }}
+            aria-label="Chat"
+            aria-pressed={isChatOpen}
+            title={isGuest ? "Sign in to chat" : "chat"}
+            className={`m-1 flex w-[46px] cursor-pointer items-center justify-center rounded-lf-md transition-colors disabled:cursor-default disabled:text-lf-text-dim ${isChatOpen ? "bg-pink-600" : "enabled:hover:bg-lf-surface-hover"}`}
+          >
             <Icon name="chat" size={22} />
           </button>
           <button
@@ -202,6 +230,9 @@ export default function GameNavbar() {
             )}
           </button>
           <AnimatePresence>{isNotifOpen && <NotificationPanel />}</AnimatePresence>
+          <AnimatePresence>
+            {isChatOpen && !isGuest && <ChatOverlay key={chatTarget?.id ?? "chat"} target={chatTarget} />}
+          </AnimatePresence>
         </div>
       </nav>
 
