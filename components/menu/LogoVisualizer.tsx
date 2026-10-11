@@ -5,9 +5,9 @@ import { useMusicStore } from "@/lib/store/useMusicStore";
 import { armMenuAnalyser, getMenuAnalyser } from "@/lib/audio/menuAnalyser";
 import { useAmbientPaused } from "@/components/ui/AmbientMotionController";
 
-const BARS = 120;
+const BARS = 64;
 /** Bar length at full volume, as a fraction of the logo radius. */
-const MAX_LENGTH = 0.45;
+const MAX_LENGTH = 0.38;
 
 /** Radial bars around the menu logo, driven by the playing track (lazer-style logo visualizer). */
 export function LogoVisualizer() {
@@ -26,6 +26,10 @@ export function LogoVisualizer() {
     let raf = 0;
     let data: Uint8Array<ArrayBuffer> | null = null;
     const levels = new Float32Array(BARS);
+    // Kick detection: bass energy against its slow running average; fast attack, slow release.
+    let bassAvg = 0;
+    let beat = 0;
+    const host = canvas.parentElement;
 
     const draw = () => {
       raf = requestAnimationFrame(draw);
@@ -39,6 +43,16 @@ export function LogoVisualizer() {
         data ??= new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(data);
       }
+      let bass = 0;
+      if (data && !audio?.paused) {
+        for (let i = 0; i < 6; i++) bass += data[i];
+        bass /= 6 * 255;
+      }
+      bassAvg = bassAvg * 0.96 + bass * 0.04;
+      const kick = Math.max(0, bass - bassAvg * 1.08) * 4;
+      beat = Math.max(Math.min(1, kick + bass * bass * 0.35), beat * 0.86);
+      host?.style.setProperty("--beat", beat.toFixed(3));
+
       // Bars mirror the lower ~70% of the spectrum around the circle; fall off smoothly when the music stops.
       const bins = data ? Math.floor(data.length * 0.7) : 0;
       for (let i = 0; i < BARS; i++) {
@@ -48,8 +62,8 @@ export function LogoVisualizer() {
 
       const c = size / 2;
       const r = size * 0.31; // the logo circle is 62% of the canvas
-      g.strokeStyle = "rgba(255,255,255,0.28)";
-      g.lineWidth = (2 * Math.PI * r) / BARS * 0.55;
+      g.strokeStyle = "rgba(255,255,255,0.2)";
+      g.lineWidth = ((2 * Math.PI * r) / BARS) * 0.32;
       g.beginPath();
       for (let i = 0; i < BARS; i++) {
         const len = levels[i] * r * MAX_LENGTH;
@@ -63,7 +77,10 @@ export function LogoVisualizer() {
       g.stroke();
     };
     draw();
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      host?.style.removeProperty("--beat");
+    };
   }, [paused]);
 
   return <canvas ref={canvasRef} aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[161%] w-[161%] -translate-x-1/2 -translate-y-1/2" />;

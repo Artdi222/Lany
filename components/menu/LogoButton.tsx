@@ -19,12 +19,14 @@ export function LogoButton({ src, pulsing, circleClassName, visualizer, classNam
   return (
     <button type="button" aria-label="Lany" {...props} className={cn("group relative cursor-pointer focus:outline-hidden", className)}>
       {visualizer && <LogoVisualizer />}
+      {/* --beat (0..1) is set every frame by LogoVisualizer: the logo kicks with the bass instead of breathing. */}
+      <div style={visualizer ? { transform: "scale(calc(1 + var(--beat, 0) * 0.06))" } : undefined}>
       <div
         className={cn(
           "relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-full text-3xl sm:text-5xl shadow-lf-glow transition-transform duration-200 ease-lf-out group-hover:scale-105 group-active:scale-95 sm:h-64 sm:w-64",
           // Logo gambar sudah punya cincin sendiri; placeholder teks butuh cincin + latar.
           !src && "border-[6px] border-white bg-linear-to-br from-lf-primary-hover to-lf-primary",
-          pulsing && "animate-breathe",
+          pulsing && !visualizer && "animate-breathe",
           circleClassName,
         )}
       >
@@ -33,6 +35,7 @@ export function LogoButton({ src, pulsing, circleClassName, visualizer, classNam
         ) : (
           <span className="font-game-display font-bold tracking-wide text-white">Lany</span>
         )}
+      </div>
       </div>
     </button>
   );
