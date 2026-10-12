@@ -14,7 +14,7 @@ type JudgementCallback = (
 const tickJudgement = (note: ParsedNote): JudgementType =>
   note.judgement === "MARVELOUS" ? "MARVELOUS" : "PERFECT";
 
-type ColumnFlashCallback = (column: number) => void;
+type ColumnFlashCallback = (column: number, pressed: boolean) => void;
 
 export class InputHandler {
   private keyMap: Map<string, number> = new Map();
@@ -83,6 +83,7 @@ export class InputHandler {
 
   stop(): void {
     this.active = false;
+    for (let c = 0; c < this.notesByColumn.length; c++) this.onColumnFlash(c, false);
     window.removeEventListener("keydown", this.handleKeyDown);
     window.removeEventListener("keyup", this.handleKeyUp);
   }
@@ -146,7 +147,7 @@ export class InputHandler {
     if (this.keyStates.get(key)) return;
     this.keyStates.set(key, true);
 
-    this.onColumnFlash(column);
+    this.onColumnFlash(column, true);
 
     // Judge at when the key was actually pressed, not when this handler got to run.
     const currentTime = this.getTimeAt(resolveEventTime(e.timeStamp, performance.now()));
@@ -204,6 +205,7 @@ export class InputHandler {
 
     if (!this.keyStates.get(key)) return;
     this.keyStates.set(key, false);
+    this.onColumnFlash(column, false);
 
     const activeNote = this.activeHoldsByColumn[column];
     if (!activeNote) return;
@@ -272,6 +274,7 @@ export class InputHandler {
     this.activeHoldsByColumn.fill(null);
     this.setupNotes(notes, this.notesByColumn.length);
     this.keyStates.forEach((_, key) => this.keyStates.set(key, false));
+    for (let c = 0; c < this.notesByColumn.length; c++) this.onColumnFlash(c, false);
   }
 
   destroy(): void {
