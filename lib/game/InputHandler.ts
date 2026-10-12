@@ -10,6 +10,10 @@ type JudgementCallback = (
   weight?: number,
   count?: number,
 ) => void;
+/** Hold ticks keep a MARVELOUS head's judgement; any other head gives PERFECT ticks. */
+const tickJudgement = (note: ParsedNote): JudgementType =>
+  note.judgement === "MARVELOUS" ? "MARVELOUS" : "PERFECT";
+
 type ColumnFlashCallback = (column: number) => void;
 
 export class InputHandler {
@@ -218,7 +222,7 @@ export class InputHandler {
     if (earlyMs <= this.missWindow * 1.5) {
       const type = earlyMs <= 50 ? "MARVELOUS" : "PERFECT";
       this.onJudgement(type, -earlyMs, currentTime, weight);
-      if (remainingTicks > 0) this.onJudgement("PERFECT", 0, currentTime, weight, remainingTicks);
+      if (remainingTicks > 0) this.onJudgement(tickJudgement(activeNote), 0, currentTime, weight, remainingTicks);
       activeNote.tailHit = true;
     } else {
       // missed tail + every remaining tick, as one update
@@ -245,7 +249,7 @@ export class InputHandler {
       ) {
         note.ticksHit++;
         note.nextTickTime += 100;
-        this.onJudgement("PERFECT", 0, currentTime, 1 / (2 + note.totalTicks));
+        this.onJudgement(tickJudgement(note), 0, currentTime, 1 / (2 + note.totalTicks));
       }
 
       if (currentTime >= note.endTime) {
@@ -257,7 +261,7 @@ export class InputHandler {
         const ticksHit = note.ticksHit ?? 0;
         const weight = 1 / (2 + totalTicks);
         this.onJudgement("MARVELOUS", 0, currentTime, weight);
-        if (totalTicks > ticksHit) this.onJudgement("PERFECT", 0, currentTime, weight, totalTicks - ticksHit);
+        if (totalTicks > ticksHit) this.onJudgement(tickJudgement(note), 0, currentTime, weight, totalTicks - ticksHit);
         note.ticksHit = totalTicks;
       }
     }
