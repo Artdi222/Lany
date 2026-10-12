@@ -101,17 +101,17 @@ export class NoteRenderer {
     const isBigger = app.screen.height > 1000;
     const sizeScale = isBigger ? 1.2 : 1.0;
     
-    const baseOffset = 130;
-    const adjustment = isBigger ? 50 : 0;
-
+    // Lane spacing and judgement line height from the reference shot (1080p): 162px between column
+    // centres (116 for 7K), receptors 128px from the edge. Note size stays the skin's own.
+    const refScale = app.screen.height / 1080;
     this.columnWidth = (keyCount === 4 ? 128 : 92) * sizeScale;
-    this.laneGap = 18 * sizeScale;
+    this.laneGap = (keyCount === 4 ? 162 : 116) * refScale - this.columnWidth;
     this.laneWidth =
       this.columnWidth * keyCount + this.laneGap * (keyCount - 1);
     this.laneX = (app.screen.width - this.laneWidth) / 2;
-    this.hitZoneY = scrollDirection === "down" 
-      ? app.screen.height - (baseOffset + adjustment) 
-      : (baseOffset - adjustment);
+    this.hitZoneY = scrollDirection === "down"
+      ? app.screen.height - 128 * refScale
+      : 128 * refScale;
     this.parsedColors = keyCount === 4 ? PARSED_COLORS_4K : PARSED_COLORS_7K;
     this.radius = this.columnWidth / 2 - 4;
 
