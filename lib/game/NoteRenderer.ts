@@ -160,7 +160,8 @@ export class NoteRenderer {
       flash.drawCircle(this.centerXs[i], this.hitZoneY, this.radius);
       flash.endFill();
       flash.alpha = 0;
-      this.laneContainer.addChild(flash);
+      // Under the notes, so a press never covers the head pinned on the receptor.
+      this.laneContainer.addChildAt(flash, this.laneContainer.getChildIndex(this.notesContainer));
       this.columnFlashes.push(flash);
     }
 
@@ -420,9 +421,15 @@ export class NoteRenderer {
         const endY = isDown
           ? this.hitZoneY - endDiff * pxPerMs
           : this.hitZoneY + endDiff * pxPerMs;
-        const startY = note.isActiveHold ? this.hitZoneY : y;
+        // A hit hold (held, or let go early) never goes back past the receptor: the rest of the body
+        // slides in from there instead of jumping to where the head would be.
+        const startY = note.headHit
+          ? (isDown ? Math.min(y, this.hitZoneY) : Math.max(y, this.hitZoneY))
+          : y;
 
-        if (!isDown || endY < this.hitZoneY || note.holdMissed) {
+        // A hit hold's body is gone once its tail reaches the receptor.
+        const tailPassed = isDown ? endY >= this.hitZoneY : endY <= this.hitZoneY;
+        if (!(note.headHit && tailPassed) && (!isDown || endY < this.hitZoneY || note.holdMissed)) {
           const realBodyH = Math.abs(endY - startY);
           // Percy-cut: cap visual body length, but never smaller than the
           // NineSlicePlane's two caps (tail-tip + rounded start) + 4px gap.
@@ -480,6 +487,8 @@ export class NoteRenderer {
       // Bug #1 fix: during an active hold, pin the head to the hit zone
       // instead of hiding it. It disappears on release via the tailHit
       // check at the top of this loop.
+      // Let go early: the head is done, only the dimmed rest of the body keeps scrolling.
+      if (note.isHoldNote && note.headHit && note.holdMissed) continue;
       const headY = note.isActiveHold ? this.hitZoneY : y;
       if (headY > -100 && headY < screenH + 100) {
         let sprite = this.notePool.pop();
