@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import type { ParsedNote, ScrollDirection } from "@/types/game";
+import { ColumnFlashes } from "./ColumnFlash";
 import { advanceFirstVisible, holdEndKey } from "./noteUtils";
 
 const COLUMN_COLORS_4K = ["#8f95c4", "#ffffff", "#ffffff", "#8f95c4"];
@@ -12,14 +13,8 @@ const COLUMN_COLORS_7K = [
   "#b9bde6",
   "#8f95c4",
 ];
-// Gameplay look measured from the reference shot (1920x1080, 4K); everything scales with screen height.
-const REF_H = 1080;
-const RECEPTOR_COLOR = 0x8a8a8a;
-const RECEPTOR_PRESSED_COLOR = 0xffffff;
-const HOLD_HEAD_COLOR = 0xd8b8e8;
-const TAP_HEAD_COLOR = 0x86aae8;
-const HOLD_BODY_COLOR = 0xc0c0c0;
-const HOLD_BODY_EDGE = 0x5a5a5a;
+const HIT_ZONE_COLOR = 0x7d7d7d;
+const COLUMN_FLASH_COLOR = 0x7d7d7d;
 
 // Pre-parsed colors to avoid parseInt on every frame
 const PARSED_COLORS_4K = COLUMN_COLORS_4K.map((c) =>
@@ -34,32 +29,12 @@ interface HoldBodySprite {
   inUse: boolean;
 }
 
-/** Head (or receptor-sized) circle texture: colored fill inside a thin white rim. */
-function circleTexture(app: PIXI.Application, r: number, fill: number, rim: number): PIXI.RenderTexture {
-  const g = new PIXI.Graphics();
-  g.beginFill(0xffffff);
-  g.drawCircle(r, r, r);
-  g.endFill();
-  g.beginFill(fill);
-  g.drawCircle(r, r, r - rim);
-  g.endFill();
-  const tex = PIXI.RenderTexture.create({
-    width: r * 2,
-    height: r * 2,
-    scaleMode: PIXI.SCALE_MODES.LINEAR,
-    resolution: app.renderer.resolution,
-  });
-  app.renderer.render(g, { renderTexture: tex });
-  g.destroy();
-  return tex;
-}
-
 export class NoteRenderer {
   private app: PIXI.Application;
   private laneContainer: PIXI.Container;
   private notesContainer: PIXI.Container;
   private hitZone: PIXI.Graphics;
-  private pressedReceptors: PIXI.Graphics[];
+  private columnFlashes: PIXI.Graphics[];
   private backgroundSprite: PIXI.Sprite | null = null;
   private backgroundContainer: PIXI.Container;
   private keyCount: number;
@@ -82,13 +57,15 @@ export class NoteRenderer {
   private notePool: PIXI.Sprite[] = [];
   private activeNotes: PIXI.Sprite[] = [];
   private noteTexture: PIXI.RenderTexture | null = null;
-  private holdHeadTexture: PIXI.RenderTexture | null = null;
 
   // Hold body sprite pool
   private holdPool: HoldBodySprite[] = [];
   private holdTexture: PIXI.RenderTexture | null = null;
   private activeHolds: HoldBodySprite[] = [];
-  private holdBodyWidth: number = 0;
+  private holdCapSize: number = 0; // cap height in pixels for NineSlicePlane
+
+  // Per-column flash fade state (advanced once per frame by tickFlashes)
+  private flashes: ColumnFlashes;
 
   // Reusable Set to avoid allocation per frame (numeric keys: see holdEndKey)
   private holdEndTimes: Set<number> = new Set();
@@ -117,25 +94,26 @@ export class NoteRenderer {
     this.rate = rate;
     this.app = app;
     this.keyCount = keyCount;
+    this.flashes = new ColumnFlashes(keyCount);
     this.scrollDirection = scrollDirection;
     this.scrollSpeed = scrollSpeed;
     this.percyMaxLengthPx = percyMaxLengthPx || 99999; // guard stale null from localStorage
-    const scale = app.screen.height / REF_H;
-    // Reference: 162px between column centres, head r71, receptor ring r73, body 125px, receptor 128px from the edge.
-    const spacing = (keyCount === 4 ? 162 : 116) * scale;
-    const k = spacing / 162;
-    this.columnWidth = 125 * k;
-    this.laneGap = spacing - this.columnWidth;
+    const isBigger = app.screen.height > 1000;
+    const sizeScale = isBigger ? 1.2 : 1.0;
+    
+    const baseOffset = 130;
+    const adjustment = isBigger ? 50 : 0;
+
+    this.columnWidth = (keyCount === 4 ? 128 : 92) * sizeScale;
+    this.laneGap = 18 * sizeScale;
     this.laneWidth =
       this.columnWidth * keyCount + this.laneGap * (keyCount - 1);
     this.laneX = (app.screen.width - this.laneWidth) / 2;
-    this.hitZoneY = scrollDirection === "down"
-      ? app.screen.height - 128 * scale
-      : 128 * scale;
+    this.hitZoneY = scrollDirection === "down" 
+      ? app.screen.height - (baseOffset + adjustment) 
+      : (baseOffset - adjustment);
     this.parsedColors = keyCount === 4 ? PARSED_COLORS_4K : PARSED_COLORS_7K;
-    this.radius = 71 * k;
-    this.holdBodyWidth = this.columnWidth;
-    const receptorR = 73 * k;
+    this.radius = this.columnWidth / 2 - 4;
 
     // Pre-compute centerX per column — avoids repeated math in the hot loop
     this.centerXs = [];
@@ -162,42 +140,69 @@ export class NoteRenderer {
     bg.endFill();
     this.laneContainer.addChildAt(bg, 0);
 
-    // Receptors: grey ring, replaced by a white ring while the key is held (drawn once, toggled).
-    // Rings only, never a filled circle, so a press never covers the head pinned on the receptor.
+    // Hit zone (drawn once, never redrawn)
     this.hitZone = new PIXI.Graphics();
     for (let i = 0; i < keyCount; i++) {
-      this.hitZone.lineStyle(6 * k, RECEPTOR_COLOR, 1);
-      this.hitZone.drawCircle(this.centerXs[i], this.hitZoneY, receptorR);
+      const centerX = this.centerXs[i];
+      this.hitZone.lineStyle(4, HIT_ZONE_COLOR, 0.8);
+      this.hitZone.drawCircle(centerX, this.hitZoneY, this.radius);
+      this.hitZone.lineStyle(8, HIT_ZONE_COLOR, 0.15);
+      this.hitZone.drawCircle(centerX, this.hitZoneY, this.radius);
     }
     if (hidden) this.addHiddenCover(app.screen.height);
     this.laneContainer.addChild(this.hitZone);
 
-    this.pressedReceptors = [];
+    // Column flashes (drawn once, alpha-animated)
+    this.columnFlashes = [];
     for (let i = 0; i < keyCount; i++) {
-      const ring = new PIXI.Graphics();
-      ring.lineStyle(9 * k, RECEPTOR_PRESSED_COLOR, 1);
-      ring.drawCircle(this.centerXs[i], this.hitZoneY, receptorR);
-      ring.visible = false;
-      this.laneContainer.addChild(ring);
-      this.pressedReceptors.push(ring);
+      const flash = new PIXI.Graphics();
+      flash.beginFill(COLUMN_FLASH_COLOR, 0.6);
+      flash.drawCircle(this.centerXs[i], this.hitZoneY, this.radius);
+      flash.endFill();
+      flash.alpha = 0;
+      this.laneContainer.addChild(flash);
+      this.columnFlashes.push(flash);
     }
 
-    const rim = Math.max(2, 3 * k);
-    this.noteTexture = circleTexture(app, this.radius, TAP_HEAD_COLOR, rim);
-    this.holdHeadTexture = circleTexture(app, this.radius, HOLD_HEAD_COLOR, rim);
+    // Build note head texture (white circle, tinted per column at runtime)
+    const headG = new PIXI.Graphics();
+    headG.beginFill(0xffffff);
+    headG.drawCircle(this.radius, this.radius, this.radius);
+    headG.endFill();
+    this.noteTexture = PIXI.RenderTexture.create({
+      width: this.radius * 2,
+      height: this.radius * 2,
+      scaleMode: PIXI.SCALE_MODES.LINEAR,
+      resolution: app.renderer.resolution,
+    });
+    app.renderer.render(headG, { renderTexture: this.noteTexture });
+    headG.destroy();
 
-    // Hold body: flat grey bar with a thin darker edge; NineSlice keeps the edge 2px at any length.
-    const holdW = Math.round(this.holdBodyWidth);
+    // Build hold body texture — sharp tail, circular start (ponytail)
+    const holdW = Math.round(this.radius * 1.8);
+    const holdCapR = Math.round(holdW / 2);
+    const holdTexH = holdCapR * 2 + 4;
+    this.holdCapSize = holdCapR;
     const holdG = new PIXI.Graphics();
-    holdG.beginFill(HOLD_BODY_EDGE);
-    holdG.drawRect(0, 0, holdW, 8);
-    holdG.endFill();
-    holdG.beginFill(HOLD_BODY_COLOR);
-    holdG.drawRect(2, 0, holdW - 4, 8);
+    holdG.beginFill(0xffffff);
+    if (this.scrollDirection === "down") {
+      holdG.moveTo(holdW / 2, 0); // top tip (tail)
+      holdG.lineTo(holdW, holdCapR);
+      holdG.lineTo(holdW, holdCapR + 4);
+      holdG.arc(holdW / 2, holdCapR + 4, holdCapR, 0, Math.PI); // bottom circular (start)
+      holdG.lineTo(0, holdCapR);
+      holdG.lineTo(holdW / 2, 0);
+    } else {
+      holdG.arc(holdW / 2, holdCapR, holdCapR, Math.PI, 0); // top circular (start)
+      holdG.lineTo(holdW, holdCapR + 4);
+      holdG.lineTo(holdW / 2, holdTexH); // bottom tip (tail)
+      holdG.lineTo(0, holdCapR + 4);
+      holdG.lineTo(0, holdCapR);
+    }
     holdG.endFill();
     this.holdTexture = PIXI.RenderTexture.create({
       width: holdW,
-      height: 8,
+      height: holdTexH,
       scaleMode: PIXI.SCALE_MODES.LINEAR,
       resolution: app.renderer.resolution,
     });
@@ -213,7 +218,13 @@ export class NoteRenderer {
       this.notePool.push(s);
     }
     for (let i = 0; i < 50; i++) {
-      const s = new PIXI.NineSlicePlane(this.holdTexture!, 3, 0, 3, 0);
+      const s = new PIXI.NineSlicePlane(
+        this.holdTexture!,
+        0,
+        this.holdCapSize,
+        0,
+        this.holdCapSize, // left, top, right, bottom slices
+      );
       s.pivot.set(holdW / 2, 0);
       s.visible = false;
       this.notesContainer.addChildAt(s, 0);
@@ -316,10 +327,25 @@ export class NoteRenderer {
     }
   }
 
-  /** Show the pressed receptor while a column's key is held. Called straight from the key handlers. */
-  setColumnPressed(column: number, pressed: boolean): void {
-    const ring = this.pressedReceptors[column];
-    if (ring && !ring.destroyed) ring.visible = pressed;
+  /**
+   * Light a column. Called straight from the key handler: it only sets a Pixi alpha, so the flash
+   * is drawn by the very next render with no React in between. A press while the column is still
+   * fading restarts the flash.
+   */
+  flashColumn(column: number): void {
+    const flash = this.columnFlashes[column];
+    if (!flash || flash.destroyed) return;
+    this.flashes.trigger(column);
+    flash.alpha = this.flashes.alpha(column);
+  }
+
+  /** Advance all flash fades by one frame. Called once per frame from the game loop. */
+  tickFlashes(deltaMs: number): void {
+    if (!this.flashes.tick(deltaMs)) return;
+    for (let i = 0; i < this.columnFlashes.length; i++) {
+      const flash = this.columnFlashes[i];
+      if (!flash.destroyed) flash.alpha = this.flashes.alpha(i);
+    }
   }
 
   updateNotes(notes: ParsedNote[], currentTime: number): void {
@@ -384,44 +410,76 @@ export class NoteRenderer {
       const y = isDown
         ? this.hitZoneY - timeDiff * pxPerMs
         : this.hitZoneY + timeDiff * pxPerMs;
+      const color = note.isHoldNote ? 0xd4b6ea : 0x86aae8;
+      const tailColor = 0xbbbcbe;
       const centerX = this.centerXs[note.column];
-      // A hold whose head was hit (held now, or let go early) never goes back past the receptor:
-      // its remaining body slides in from the receptor instead of jumping to where the head would be.
-      const pinned = note.isHoldNote && !!note.headHit;
-      const startY = pinned
-        ? (isDown ? Math.min(y, this.hitZoneY) : Math.max(y, this.hitZoneY))
-        : y;
 
-      // ─── HOLD BODY: flat bar from the head to the tail ───
-      if (note.isHoldNote) {
+      // ─── HOLD BODY (sprite-based, no Graphics redraw) ───
+      if (note.isHoldNote || note.isActiveHold) {
         const endDiff = note.endTime - currentTime;
         const endY = isDown
           ? this.hitZoneY - endDiff * pxPerMs
           : this.hitZoneY + endDiff * pxPerMs;
-        const bodyH = Math.min(Math.abs(endY - startY), this.percyMaxLengthPx);
+        const startY = note.isActiveHold ? this.hitZoneY : y;
 
-        if (bodyH > 0) {
+        if (!isDown || endY < this.hitZoneY || note.holdMissed) {
+          const realBodyH = Math.abs(endY - startY);
+          // Percy-cut: cap visual body length, but never smaller than the
+          // NineSlicePlane's two caps (tail-tip + rounded start) + 4px gap.
+          const minBodyH = this.holdCapSize * 2 + 4;
+          const visualBodyH = Math.max(
+            Math.min(realBodyH, this.percyMaxLengthPx),
+            minBodyH,
+          );
+
+          // Anchor fix: the pivot sits on the texture's top edge.
+          // - down scroll: pivot must be at the HEAD side (startY), so shift
+          //   the visual top upward from startY by visualBodyH.
+          // - up scroll: pivot is already at the HEAD side (startY), just
+          //   cap the length.
+          // Overlap: extend the body past the head so the start-cap is fully
+          // hidden behind the circular head sprite (body is narrower than head).
+          const overlap = this.holdCapSize;
+          const top = isDown
+            ? startY - visualBodyH
+            : startY - overlap;
+
           let hold = this.holdPool.pop();
           if (!hold) {
-            const s = new PIXI.NineSlicePlane(this.holdTexture!, 3, 0, 3, 0);
-            s.pivot.set(this.holdBodyWidth / 2, 0);
+            const s = new PIXI.NineSlicePlane(
+              this.holdTexture!,
+              0,
+              this.holdCapSize,
+              0,
+              this.holdCapSize,
+            );
+            const holdW = Math.round(this.radius * 1.8);
+            s.pivot.set(holdW / 2, 0);
             s.visible = false;
             this.notesContainer.addChildAt(s, 0);
             hold = { sprite: s, inUse: true };
           }
+
           hold.sprite.visible = true;
-          hold.sprite.tint = note.holdMissed ? 0x707070 : 0xffffff;
-          hold.sprite.alpha = note.holdMissed ? 0.6 : 1;
-          hold.sprite.height = bodyH;
+          if (note.holdMissed) {
+            hold.sprite.tint = this.darkenColor(tailColor, 0.4);
+            hold.sprite.alpha = 0.6;
+          } else {
+            hold.sprite.tint = tailColor;
+            hold.sprite.alpha = 1.0;
+          }
+          hold.sprite.height = visualBodyH + overlap;
           hold.sprite.x = centerX;
-          hold.sprite.y = isDown ? startY - bodyH : startY;
+          hold.sprite.y = top;
           hold.inUse = true;
           this.activeHolds.push(hold);
         }
       }
 
-      // ─── HEAD: pinned to the receptor while held, gone once the hold is let go ───
-      if (pinned && note.holdMissed) continue;
+      // ─── HEAD SPRITE ───
+      // Bug #1 fix: during an active hold, pin the head to the hit zone
+      // instead of hiding it. It disappears on release via the tailHit
+      // check at the top of this loop.
       const headY = note.isActiveHold ? this.hitZoneY : y;
       if (headY > -100 && headY < screenH + 100) {
         let sprite = this.notePool.pop();
@@ -430,11 +488,14 @@ export class NoteRenderer {
           sprite.anchor.set(0.5);
           this.notesContainer.addChild(sprite);
         }
-        sprite.texture = note.isHoldNote ? this.holdHeadTexture! : this.noteTexture!;
         sprite.visible = true;
-        const missed = note.isHoldNote && note.holdMissed;
-        sprite.tint = missed ? 0x707070 : 0xffffff;
-        sprite.alpha = missed ? 0.5 : 1;
+        if (note.isHoldNote && note.holdMissed) {
+          sprite.tint = this.darkenColor(color, 0.2);
+          sprite.alpha = 0.4;
+        } else {
+          sprite.tint = color;
+          sprite.alpha = 1.0;
+        }
         sprite.position.set(centerX, headY);
         this.activeNotes.push(sprite);
       }
@@ -480,6 +541,12 @@ export class NoteRenderer {
     }
   }
 
+  private darkenColor(color: number, factor: number = 0.6): number {
+    const r = Math.floor(((color >> 16) & 0xff) * factor);
+    const g = Math.floor(((color >> 8) & 0xff) * factor);
+    const b = Math.floor((color & 0xff) * factor);
+    return (r << 16) | (g << 8) | b;
+  }
 
   getHitZoneY(): number {
     return this.hitZoneY;
@@ -545,6 +612,7 @@ export class NoteRenderer {
     this.activeNotes.length = 0;
     this.holdPool.length = 0;
     this.activeHolds.length = 0;
+    this.flashes.reset();
     this.holdEndTimes.clear();
   }
 }

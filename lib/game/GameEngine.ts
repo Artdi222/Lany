@@ -71,7 +71,7 @@ export class GameEngine {
       // Errors are measured in song time; report them in real ms so the hit-error graph matches what the player felt.
       (type, errorMs, time, weight, count) =>
         this.callbacks.onJudgement(type, errorMs / rate, time, weight, count),
-      (column, pressed) => this.noteRenderer.setColumnPressed(column, pressed),
+      (column) => this.noteRenderer.flashColumn(column),
     );
   }
 
@@ -131,6 +131,7 @@ export class GameEngine {
 
   private gameLoop = (): void => {
     // Flashes keep fading while paused, like the per-flash ticker callbacks they replace.
+    this.noteRenderer.tickFlashes(this.app.ticker.deltaMS);
     if (this.paused) return;
     this.audioEngine.syncClock();
     const currentTime = this.audioEngine.getCurrentTime();
