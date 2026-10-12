@@ -10,10 +10,6 @@ type JudgementCallback = (
   weight?: number,
   count?: number,
 ) => void;
-/** Hold ticks keep a MARVELOUS head's judgement; any other head gives PERFECT ticks. */
-const tickJudgement = (note: ParsedNote): JudgementType =>
-  note.judgement === "MARVELOUS" ? "MARVELOUS" : "PERFECT";
-
 type ColumnFlashCallback = (column: number) => void;
 
 export class InputHandler {
@@ -153,6 +149,13 @@ export class InputHandler {
     const missWindow = this.missWindow;
     const columnNotes = this.notesByColumn[column];
 
+    // Pressing again on a hold that was let go early picks it back up (it stays dimmed).
+    const released = this.activeHoldsByColumn[column];
+    if (released && !released.isActiveHold && currentTime < released.endTime) {
+      this.resumeHold(released, currentTime);
+      return;
+    }
+
     let index = this.columnIndices[column];
 
     // Advance past any notes that are already processed or hopelessly missed.
@@ -208,9 +211,8 @@ export class InputHandler {
     const activeNote = this.activeHoldsByColumn[column];
     if (!activeNote) return;
 
-    this.activeHoldsByColumn[column] = null;
+    if (!activeNote.isActiveHold) return;
     activeNote.isActiveHold = false;
-    activeNote.tailHit = true;
 
     const currentTime = this.getTimeAt(resolveEventTime(e.timeStamp, performance.now()));
     const earlyMs = activeNote.endTime - currentTime;
@@ -219,18 +221,35 @@ export class InputHandler {
     const weight = 1 / (2 + totalTicks);
     const remainingTicks = totalTicks - ticksHit;
 
-    if (earlyMs <= this.missWindow * 1.5) {
-      const type = earlyMs <= 50 ? "MARVELOUS" : "PERFECT";
-      this.onJudgement(type, -earlyMs, currentTime, weight);
-      if (remainingTicks > 0) this.onJudgement(tickJudgement(activeNote), 0, currentTime, weight, remainingTicks);
-      activeNote.tailHit = true;
-    } else {
-      // missed tail + every remaining tick, as one update
-      this.onJudgement("MISS", -earlyMs, currentTime, weight, 1 + Math.max(0, remainingTicks));
+    if (earlyMs > this.missWindow * 1.5) {
+      // Let go early: dim it but keep it in the column, a new press resumes it (see resumeHold);
+      // update() settles it at the tail if it is never picked back up.
       activeNote.holdMissed = true;
-      activeNote.tailHit = true; // Still mark as finished to advance indices
+      return;
     }
+    this.activeHoldsByColumn[column] = null;
+    activeNote.tailHit = true;
+    const type = earlyMs <= 50 ? "MARVELOUS" : "PERFECT";
+    this.onJudgement(type, -earlyMs, currentTime, weight);
+    if (remainingTicks > 0) this.onJudgement("MARVELOUS", 0, currentTime, weight, remainingTicks);
     activeNote.ticksHit = totalTicks;
+  }
+
+  /** Pick a released hold back up: the ticks that passed while it was let go are missed, the rest score as usual. */
+  private resumeHold(note: ParsedNote, currentTime: number): void {
+    note.isActiveHold = true;
+    const totalTicks = note.totalTicks ?? 0;
+    let missed = 0;
+    while (
+      note.nextTickTime !== undefined &&
+      (note.ticksHit ?? 0) < totalTicks &&
+      note.nextTickTime <= currentTime
+    ) {
+      note.ticksHit = (note.ticksHit ?? 0) + 1;
+      note.nextTickTime += 100;
+      missed++;
+    }
+    if (missed > 0) this.onJudgement("MISS", 0, currentTime, 1 / (2 + totalTicks), missed);
   }
 
   update(currentTime: number): void {
@@ -239,6 +258,19 @@ export class InputHandler {
     for (let i = 0; i < this.activeHoldsByColumn.length; i++) {
       const note = this.activeHoldsByColumn[i];
       if (!note) continue;
+
+      if (!note.isActiveHold) {
+        if (currentTime >= note.endTime) {
+          // Never picked back up: the tail and every tick left are missed.
+          this.activeHoldsByColumn[i] = null;
+          note.tailHit = true;
+          const totalTicks = note.totalTicks ?? 0;
+          const left = totalTicks - (note.ticksHit ?? 0);
+          this.onJudgement("MISS", 0, currentTime, 1 / (2 + totalTicks), 1 + Math.max(0, left));
+          note.ticksHit = totalTicks;
+        }
+        continue;
+      }
 
       if (
         note.nextTickTime !== undefined &&
@@ -249,7 +281,7 @@ export class InputHandler {
       ) {
         note.ticksHit++;
         note.nextTickTime += 100;
-        this.onJudgement(tickJudgement(note), 0, currentTime, 1 / (2 + note.totalTicks));
+        this.onJudgement("MARVELOUS", 0, currentTime, 1 / (2 + note.totalTicks));
       }
 
       if (currentTime >= note.endTime) {
@@ -261,7 +293,7 @@ export class InputHandler {
         const ticksHit = note.ticksHit ?? 0;
         const weight = 1 / (2 + totalTicks);
         this.onJudgement("MARVELOUS", 0, currentTime, weight);
-        if (totalTicks > ticksHit) this.onJudgement(tickJudgement(note), 0, currentTime, weight, totalTicks - ticksHit);
+        if (totalTicks > ticksHit) this.onJudgement("MARVELOUS", 0, currentTime, weight, totalTicks - ticksHit);
         note.ticksHit = totalTicks;
       }
     }

@@ -487,8 +487,8 @@ export class NoteRenderer {
       // Bug #1 fix: during an active hold, pin the head to the hit zone
       // instead of hiding it. It disappears on release via the tailHit
       // check at the top of this loop.
-      // Let go early: the head is done, only the dimmed rest of the body keeps scrolling.
-      if (note.isHoldNote && note.headHit && note.holdMissed) continue;
+      // Let go early: only the dimmed body shows; pressing again brings the (dimmed) head back on the receptor.
+      if (note.isHoldNote && note.headHit && note.holdMissed && !note.isActiveHold) continue;
       const headY = note.isActiveHold ? this.hitZoneY : y;
       if (headY > -100 && headY < screenH + 100) {
         let sprite = this.notePool.pop();
