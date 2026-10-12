@@ -104,8 +104,10 @@ export class NoteRenderer {
     // Lane spacing and judgement line height from the reference shot (1080p): 162px between column
     // centres (116 for 7K), receptors 128px from the edge. Note size stays the skin's own.
     const refScale = app.screen.height / 1080;
-    this.columnWidth = (keyCount === 4 ? 128 : 92) * sizeScale;
-    this.laneGap = (keyCount === 4 ? 162 : 116) * refScale - this.columnWidth;
+    const spacing = (keyCount === 4 ? 162 : 116) * refScale;
+    // Short screens: shrink notes to fit the spacing rather than overlap.
+    this.columnWidth = Math.min((keyCount === 4 ? 128 : 92) * sizeScale, spacing - 4);
+    this.laneGap = spacing - this.columnWidth;
     this.laneWidth =
       this.columnWidth * keyCount + this.laneGap * (keyCount - 1);
     this.laneX = (app.screen.width - this.laneWidth) / 2;
