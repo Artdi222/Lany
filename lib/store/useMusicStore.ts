@@ -114,8 +114,15 @@ export const useMusicStore = create<MusicState>((set, get) => {
         const playPromise = currentAudio.play();
         if (playPromise !== undefined) {
           playPromise.catch(e => {
-            if (e.name === "AbortError") return;
-            console.warn("Music autoplay blocked:", e);
+            if (e.name !== "NotAllowedError") return;
+            // Autoplay blocked until the first user gesture: play then instead of staying silent.
+            const retry = () => {
+              window.removeEventListener("pointerdown", retry);
+              window.removeEventListener("keydown", retry);
+              if (get().isPlaying && currentAudio.paused) currentAudio.play().catch(() => {});
+            };
+            window.addEventListener("pointerdown", retry);
+            window.addEventListener("keydown", retry);
           });
         }
       } catch (err) {
